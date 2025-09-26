@@ -4,10 +4,10 @@ A modern monorepo showcasing a **ReAct (Reasoning and Acting) AI shopping agent*
 
 ## 📚 Documentation
 
-- **[SETUP.md](./SETUP.md)** - Complete setup guide with environment configuration and troubleshooting
-- **[PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)** - Comprehensive project overview and architecture details
-- **[THIRDWEB_X402_INTEGRATION.md](./THIRDWEB_X402_INTEGRATION.md)** - Client/server x402 implementation details
-- **[AGENT_X402_INTEGRATION.md](./AGENT_X402_INTEGRATION.md)** - Guide for integrating x402 payments into AI agents
+- **[docs/SETUP.md](./docs/SETUP.md)** - Complete setup guide with environment configuration and troubleshooting
+- **[docs/PROJECT_SUMMARY.md](./docs/PROJECT_SUMMARY.md)** - Comprehensive project overview and architecture details
+- **[docs/THIRDWEB_X402_INTEGRATION.md](./docs/THIRDWEB_X402_INTEGRATION.md)** - Client/server x402 implementation details
+- **[docs/AGENT_X402_INTEGRATION.md](./docs/AGENT_X402_INTEGRATION.md)** - Guide for integrating x402 payments into AI agents
 
 ## Architecture
 
@@ -29,10 +29,12 @@ shopping-agent-x402/
 ├── package.json                 # Root workspace configuration
 ├── pnpm-workspace.yaml          # pnpm workspace configuration
 ├── README.md
-├── SETUP.md                     # Detailed setup guide
-├── PROJECT_SUMMARY.md           # Complete project overview
-├── THIRDWEB_X402_INTEGRATION.md # x402 implementation details
 ├── .gitignore
+├── docs/                        # Documentation
+│   ├── SETUP.md                 # Detailed setup guide
+│   ├── PROJECT_SUMMARY.md       # Complete project overview
+│   ├── THIRDWEB_X402_INTEGRATION.md # x402 implementation details
+│   └── AGENT_X402_INTEGRATION.md # Agent integration guide
 ├── apps/
 │   ├── shopping-agent/          # ReAct AI Shopping Agent (LangChain)
 │   └── merchant/                # Node Express Store API (thirdweb x402)
