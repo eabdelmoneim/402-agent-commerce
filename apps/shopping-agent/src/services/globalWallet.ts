@@ -1,16 +1,16 @@
-import { ClientWalletService } from './clientWalletService.js';
+import { AgentWalletService } from './agentWalletService.js';
 
-// Global client wallet service instance
-export const clientWalletService = new ClientWalletService();
+// Global agent wallet service instance
+export const clientWalletService = new AgentWalletService();
 
 // Initialize the wallet service on module load
 export async function initializeWalletService(): Promise<void> {
   try {
-    console.log('🔑 Initializing global client wallet service...');
-    await clientWalletService.createOrGetClientWallet();
-    console.log('✅ Global client wallet service initialized');
+    console.log('🔑 Initializing global agent wallet service...');
+    await clientWalletService.createOrGetAgentWallet();
+    console.log('✅ Global agent wallet service initialized');
   } catch (error: any) {
-    console.error('❌ Failed to initialize global client wallet service:', error);
+    console.error('❌ Failed to initialize global agent wallet service:', error);
     throw error;
   }
 }

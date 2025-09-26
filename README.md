@@ -34,8 +34,8 @@ shopping-agent-x402/
 ├── THIRDWEB_X402_INTEGRATION.md # x402 implementation details
 ├── .gitignore
 ├── apps/
-│   ├── client/                  # ReAct AI Shopping Agent (LangChain)
-│   └── server/                  # Node Express Store API (thirdweb x402)
+│   ├── shopping-agent/          # ReAct AI Shopping Agent (LangChain)
+│   └── merchant/                # Node Express Store API (thirdweb x402)
 └── packages/                    # Shared packages (future A2A integration)
     └── shared-types/
 ```
@@ -56,15 +56,15 @@ shopping-agent-x402/
 pnpm install
 
 # Copy environment files
-cp apps/server/env.example apps/server/.env
-cp apps/client/env.example apps/client/.env
+cp apps/merchant/env.example apps/merchant/.env
+cp apps/shopping-agent/env.example apps/shopping-agent/.env
 
 # Add your API keys to the .env files
 ```
 
 ### Configuration
 
-#### Server Environment (`apps/server/.env`)
+#### Server Environment (`apps/merchant/.env`)
 ```bash
 PORT=3001
 OPENAI_API_KEY=your_openai_key
@@ -76,7 +76,7 @@ NETWORK=base-sepolia
 BASE_URL=http://localhost:3001
 ```
 
-#### Client Environment (`apps/client/.env`)
+#### Client Environment (`apps/shopping-agent/.env`)
 ```bash
 API_BASE_URL=http://localhost:3001/api
 OPENAI_API_KEY=your_openai_api_key

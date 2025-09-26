@@ -1,17 +1,17 @@
 import { 
   ThirdwebWalletResponse, 
-  ClientWalletConfig, 
+  AgentWalletConfig, 
   X402PaymentRequirements,
   ThirdwebX402PrepareRequest,
   ThirdwebX402PrepareResponse
 } from '../types/Payment.js';
 
-export class ClientWalletService {
-  private clientWallet: ClientWalletConfig | null = null;
+export class AgentWalletService {
+  private agentWallet: AgentWalletConfig | null = null;
 
-  async createOrGetClientWallet(): Promise<ClientWalletConfig> {
-    if (this.clientWallet) {
-      return this.clientWallet;
+  async createOrGetAgentWallet(): Promise<AgentWalletConfig> {
+    if (this.agentWallet) {
+      return this.agentWallet;
     }
 
     const identifier = process.env.CLIENT_WALLET_IDENTIFIER;
@@ -40,12 +40,12 @@ export class ClientWalletService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Failed to create/get client wallet: ${response.status} ${errorText}`);
+        throw new Error(`Failed to create/get agent wallet: ${response.status} ${errorText}`);
       }
 
       const data: ThirdwebWalletResponse = await response.json();
 
-      this.clientWallet = {
+      this.agentWallet = {
         identifier,
         address: data.result.address,
         smartWalletAddress: data.result.smartWalletAddress,
@@ -53,30 +53,30 @@ export class ClientWalletService {
         role: 'client_agent'
       };
 
-      console.log('✅ Client wallet initialized:', {
-        identifier: this.clientWallet.identifier,
-        walletAddress: this.clientWallet.address,
-        role: this.clientWallet.role
+      console.log('✅ Agent wallet initialized:', {
+        identifier: this.agentWallet.identifier,
+        walletAddress: this.agentWallet.address,
+        role: this.agentWallet.role
       });
 
-      return this.clientWallet;
+      return this.agentWallet;
     } catch (error: any) {
-      console.error('Error creating client wallet:', error);
+      console.error('Error creating agent wallet:', error);
       throw error;
     }
   }
 
-  getClientWallet(): ClientWalletConfig | null {
-    return this.clientWallet;
+  getClientWallet(): AgentWalletConfig | null {
+    return this.agentWallet;
   }
 
   getWalletAddress(): string | null {
-    return this.clientWallet?.address || null;
+    return this.agentWallet?.address || null;
   }
 
   async prepareX402Payment(productId: string, requirements: X402PaymentRequirements): Promise<ThirdwebX402PrepareResponse> {
-    if (!this.clientWallet) {
-      throw new Error('Client wallet not initialized');
+    if (!this.agentWallet) {
+      throw new Error('Agent wallet not initialized');
     }
 
     const thirdwebSecretKey = process.env.THIRDWEB_SECRET_KEY;
@@ -88,7 +88,7 @@ export class ClientWalletService {
 
     try {
       const prepareRequest: ThirdwebX402PrepareRequest = {
-        from: this.clientWallet.address,
+        from: this.agentWallet.address,
         paymentRequirements: requirements
       };
 
@@ -110,7 +110,7 @@ export class ClientWalletService {
 
       console.log('✅ x402 payment prepared successfully:', {
         productId,
-        fromWallet: this.clientWallet.address,
+        fromWallet: this.agentWallet.address,
         toWallet: requirements.payTo,
         amount: requirements.maxAmountRequired
       });

@@ -19,7 +19,7 @@ shopping-agent-x402/
 ├── ai-docs/
 │   └── plan.md                      # Original implementation plan
 ├── apps/
-│   ├── client/                      # LangChain ReAct Shopping Agent
+│   ├── shopping-agent/              # LangChain ReAct Shopping Agent
 │   │   ├── package.json             # Client dependencies (LangChain, thirdweb)
 │   │   ├── tsconfig.json            # TypeScript configuration
 │   │   ├── env.example              # Environment template
@@ -32,14 +32,14 @@ shopping-agent-x402/
 │   │       │   ├── getProducts.ts        # Product search implementation
 │   │       │   └── processX402Payment.ts # x402 payment implementation
 │   │       ├── services/
-│   │       │   ├── clientWalletService.ts # Smart wallet management
+│   │       │   ├── agentWalletService.ts  # Smart wallet management
 │   │       │   ├── globalWallet.ts       # Global wallet service
 │   │       │   └── apiClient.ts          # HTTP client with x402 flow
 │   │       └── types/
 │   │           ├── Agent.ts              # Tool result types
 │   │           ├── Product.ts            # Product-related types
 │   │           └── Payment.ts            # Payment & x402 types
-│   └── server/                      # Node Express Store API
+│   └── merchant/                    # Node Express Store API
 │       ├── package.json             # Server dependencies (thirdweb, OpenAI)
 │       ├── tsconfig.json            # TypeScript configuration
 │       ├── env.example              # Environment template
@@ -124,9 +124,9 @@ export const createGetProductsTool = () => {
 #### 3. Global Wallet Service
 ```typescript
 // Eliminates parameter passing throughout the codebase
-export const clientWalletService = new ClientWalletService();
+export const clientWalletService = new AgentWalletService();
 export async function initializeWalletService() {
-  await clientWalletService.createOrGetClientWallet();
+  await clientWalletService.createOrGetAgentWallet();
 }
 ```
 

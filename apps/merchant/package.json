@@ -1,5 +1,5 @@
 {
-  "name": "server",
+  "name": "merchant",
   "version": "1.0.0",
   "type": "module",
   "description": "Node Express Store API with x402 Payment Integration",

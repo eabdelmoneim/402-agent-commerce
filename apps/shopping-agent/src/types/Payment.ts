@@ -68,7 +68,7 @@ export interface ThirdwebWalletResponse {
   };
 }
 
-export interface ClientWalletConfig {
+export interface AgentWalletConfig {
   identifier: string;
   address: string;
   smartWalletAddress: string;

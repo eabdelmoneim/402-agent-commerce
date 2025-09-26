@@ -28,11 +28,11 @@ The client-side implementation focuses on **AI agent wallet management** and **p
 
 #### 1. **thirdweb Server Wallet for Agent**
 ```typescript
-// apps/client/src/services/clientWalletService.ts
-export class ClientWalletService {
-  private clientWallet: ClientWalletConfig | null = null;
+// apps/shopping-agent/src/services/agentWalletService.ts
+export class AgentWalletService {
+  private clientWallet: AgentWalletConfig | null = null;
 
-  async createOrGetClientWallet(): Promise<ClientWalletConfig> {
+  async createOrGetAgentWallet(): Promise<AgentWalletConfig> {
     if (this.clientWallet) return this.clientWallet;
 
     // Create thirdweb Server Wallet via thirdweb API
@@ -63,7 +63,7 @@ export class ClientWalletService {
 
 #### 2. **thirdweb API for Payment Preparation**
 ```typescript
-// apps/client/src/services/clientWalletService.ts
+// apps/shopping-agent/src/services/agentWalletService.ts
 async prepareX402Payment(productId: string, requirements: X402PaymentRequirements): Promise<ThirdwebX402PrepareResponse> {
   if (!this.clientWallet) {
     throw new Error('Client wallet not initialized');
@@ -95,18 +95,18 @@ async prepareX402Payment(productId: string, requirements: X402PaymentRequirement
 
 #### 3. **Global Wallet Service Pattern**
 ```typescript
-// apps/client/src/services/globalWallet.ts
-export const clientWalletService = new ClientWalletService();
+// apps/shopping-agent/src/services/globalWallet.ts
+export const clientWalletService = new AgentWalletService();
 
 export async function initializeWalletService(): Promise<void> {
-  await clientWalletService.createOrGetClientWallet();
+  await clientWalletService.createOrGetAgentWallet();
   console.log('✅ Global client wallet service initialized');
 }
 ```
 
 #### 4. **Agent Integration with LangChain**
 ```typescript
-// apps/client/src/agent/ShoppingAgent.ts
+// apps/shopping-agent/src/agent/ShoppingAgent.ts
 export class ShoppingAgent {
   private llm: ChatOpenAI;
   private agent: AgentExecutor | null = null;
@@ -160,7 +160,7 @@ The server-side implementation focuses on **x402 payment processing** using thir
 
 #### 1. **thirdweb x402 Service**
 ```typescript
-// apps/server/src/services/thirdwebX402Service.ts
+// apps/merchant/src/services/thirdwebX402Service.ts
 import { createThirdwebClient } from "thirdweb";
 import { facilitator, settlePayment } from "thirdweb/x402";
 import { baseSepolia } from "thirdweb/chains";
@@ -218,7 +218,7 @@ export class ThirdwebX402Service {
 
 #### 2. **Merchant Wallet Management**
 ```typescript
-// apps/server/src/services/thirdwebWalletService.ts
+// apps/merchant/src/services/thirdwebWalletService.ts
 export class ThirdwebWalletService {
   private merchantFacilitatorWallet: WalletConfig | null = null;
 
@@ -255,7 +255,7 @@ export class ThirdwebWalletService {
 
 #### 3. **x402 Purchase API Endpoint**
 ```typescript
-// apps/server/src/routes/purchase.ts
+// apps/merchant/src/routes/purchase.ts
 router.post('/:productId', async (req, res) => {
   try {
     const { productId } = req.params;
@@ -433,7 +433,7 @@ Agent Client                    Express Server
 
 ### Type Safety Improvements
 ```typescript
-// apps/server/src/types/thirdweb.d.ts - Custom type declarations
+// apps/merchant/src/types/thirdweb.d.ts - Custom type declarations
 declare module 'thirdweb' {
   export interface ThirdwebClient {}
   export function createThirdwebClient(config: { secretKey: string }): ThirdwebClient;

@@ -122,10 +122,10 @@ async executePurchase(productId: string): Promise<PurchaseResponse> {
 
 ```typescript
 // Global wallet service for x402 payments
-export class ClientWalletService {
-  private clientWallet: ClientWalletConfig | null = null;
+export class AgentWalletService {
+  private clientWallet: AgentWalletConfig | null = null;
 
-  async createOrGetClientWallet(): Promise<ClientWalletConfig> {
+  async createOrGetAgentWallet(): Promise<AgentWalletConfig> {
     if (this.clientWallet) return this.clientWallet;
 
     const response = await fetch(`${thirdwebApiUrl}/wallets/server`, {

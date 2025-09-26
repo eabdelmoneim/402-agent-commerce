@@ -20,12 +20,12 @@ pnpm install
 
 ### 2. Configure Environment Variables
 
-#### Server Environment (`apps/server/.env`)
+#### Server Environment (`apps/merchant/.env`)
 ```bash
-cp apps/server/env.example apps/server/.env
+cp apps/merchant/env.example apps/merchant/.env
 ```
 
-Edit `apps/server/.env`:
+Edit `apps/merchant/.env`:
 ```bash
 PORT=3001
 NODE_ENV=development
@@ -46,12 +46,12 @@ USDC_CONTRACT_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
 BASE_URL=http://localhost:3001
 ```
 
-#### Client Environment (`apps/client/.env`)
+#### Client Environment (`apps/shopping-agent/.env`)
 ```bash
-cp apps/client/env.example apps/client/.env
+cp apps/shopping-agent/env.example apps/shopping-agent/.env
 ```
 
-Edit `apps/client/.env`:
+Edit `apps/shopping-agent/.env`:
 ```bash
 API_BASE_URL=http://localhost:3001/api
 
@@ -297,8 +297,8 @@ pnpm --filter server typecheck
 
 ## Next Steps
 
-1. **Customize Products**: Modify prompts in `apps/server/src/services/productGenerator.ts`
-2. **Extend Agent Tools**: Add new LangChain tools in `apps/client/src/agent/tools.ts`  
+1. **Customize Products**: Modify prompts in `apps/merchant/src/services/productGenerator.ts`
+2. **Extend Agent Tools**: Add new LangChain tools in `apps/shopping-agent/src/agent/tools.ts`  
 3. **Enhanced UI**: Build a web interface for the shopping agent
 4. **Production Deploy**: Configure for mainnet with real USDC
 5. **A2A Integration**: Transition to agent-to-agent communication (Phase 2)
