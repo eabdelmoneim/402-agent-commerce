@@ -36,8 +36,9 @@ shopping-agent-x402/
 │   ├── THIRDWEB_X402_INTEGRATION.md # x402 implementation details
 │   └── AGENT_X402_INTEGRATION.md # Agent integration guide
 ├── apps/
-│   ├── shopping-agent/          # ReAct AI Shopping Agent (LangChain)
-│   └── merchant/                # Node Express Store API (thirdweb x402)
+│   ├── shopping-agent/          # ReAct AI Shopping Agent (LangChain) + Agents API
+│   ├── merchant/                # Node Express Store API (thirdweb x402)
+│   └── frontend/                # React Web Demo (x402 Protocol Showcase)
 └── packages/                    # Shared packages (future A2A integration)
     └── shared-types/
 ```
@@ -60,6 +61,7 @@ pnpm install
 # Copy environment files
 cp apps/merchant/env.example apps/merchant/.env
 cp apps/shopping-agent/env.example apps/shopping-agent/.env
+cp apps/frontend/env.example apps/frontend/.env
 
 # Add your API keys to the .env files
 ```
@@ -84,22 +86,40 @@ API_BASE_URL=http://localhost:3001/api
 OPENAI_API_KEY=your_openai_api_key
 THIRDWEB_SECRET_KEY=your_thirdweb_secret_key
 THIRDWEB_API_URL=https://api.thirdweb.com/v1
-CLIENT_WALLET_IDENTIFIER=client-sw
+CLI_AGENT_WALLET_IDENTIFIER=cli-agent-sw
 NETWORK=base-sepolia
 USDC_CONTRACT=0x036CbD53842c5426634e7929541eC2318f3dCF7e
+```
+
+#### Frontend Environment (`apps/frontend/.env`)
+```bash
+VITE_AGENTS_API_URL=http://localhost:3002/api
+VITE_WS_URL=ws://localhost:3002
+VITE_FAUCET_URL=https://faucet.circle.com/
+VITE_NETWORK=base-sepolia
+VITE_USDC_CONTRACT=0x036CbD53842c5426634e7929541eC2318f3dCF7e
+```
+
+#### Shopping Agent Environment (`apps/shopping-agent/.env`)
+```bash
+# ... existing config ...
+# Agents API Configuration
+AGENTS_API_PORT=3002
+MERCHANT_API_URL=http://localhost:3001/api
+NODE_ENV=development
 ```
 
 ### Development
 
 ```bash
-# Start both client and server
+# Start all services (agent, merchant, frontend)
 pnpm dev
 
-# Start server only
-pnpm dev:server
-
-# Start client only
-pnpm dev:client
+# Start individual services
+pnpm dev:server      # Merchant API only (port 3001)
+pnpm dev:agents-api  # Agents API only (port 3002)
+pnpm dev:cli         # Shopping agent CLI only
+pnpm dev:frontend    # Web frontend only (port 3000)
 ```
 
 ### Usage
@@ -109,15 +129,30 @@ pnpm dev:client
    pnpm dev
    ```
 
-2. **Test the server API**:
+2. **Access the web demo**:
+   - Open http://localhost:3000 in your browser
+   - Create a shopping agent with a custom name
+   - Fund the agent using the Circle USDC faucet
+   - Chat with your agent to experience x402 payments
+
+3. **API Endpoints**:
+   - **Agents API**: http://localhost:3002/api (agent management and chat - uses merchant API internally)
+   - **Merchant API**: http://localhost:3001/api (internal - used by agents API)
+   - **Frontend**: http://localhost:3000 (web demo - only talks to agents API)
+
+4. **Test the APIs directly**:
    ```bash
+   # Test agents API
+   curl "http://localhost:3002/api/agents" -X POST -H "Content-Type: application/json" -d '{"name":"TestAgent"}'
+   
+   # Test merchant API directly (internal)
    curl "http://localhost:3001/api/products?query=TV&maxPrice=5"
    ```
 
-3. **Interact with the shopping agent**:
-   The client will start an interactive session where you can make natural language requests:
+4. **Use the CLI shopping agent**:
+   The shopping agent will start an interactive session where you can make natural language requests:
    - "I want to buy a TV under $5"
-   - "Show me laptops with good reviews"
+   - "Show me laptops with good reviews"  
    - "Purchase the Samsung TV"
 
 ## Features

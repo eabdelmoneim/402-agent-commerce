@@ -14,9 +14,9 @@ export class AgentWalletService {
       return this.agentWallet;
     }
 
-    const identifier = process.env.CLIENT_WALLET_IDENTIFIER;
+    const identifier = process.env.CLI_AGENT_WALLET_IDENTIFIER;
     if (!identifier) {
-      throw new Error('CLIENT_WALLET_IDENTIFIER environment variable is required');
+      throw new Error('CLI_AGENT_WALLET_IDENTIFIER environment variable is required');
     }
 
     const thirdwebSecretKey = process.env.THIRDWEB_SECRET_KEY;
@@ -102,6 +102,7 @@ export class AgentWalletService {
       });
 
       if (!response.ok) {
+        console.log(`❌ Failed to prepare x402 payment: ${await response.json()}`);
         const errorText = await response.text();
         throw new Error(`Failed to prepare x402 payment: ${response.status} ${errorText}`);
       }

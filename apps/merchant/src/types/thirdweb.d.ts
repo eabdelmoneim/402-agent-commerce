@@ -39,6 +39,12 @@ declare module 'thirdweb/x402' {
     status: number;
     responseHeaders?: Record<string, string>;
     responseBody?: any;
+    paymentReceipt?: {
+      success: boolean;
+      transaction: string;
+      network: string;
+      payer: string;
+    };
   }
   
   export function facilitator(config: FacilitatorConfig): any;

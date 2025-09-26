@@ -1,12 +1,15 @@
 import { ProductSearchResponse, ProductDetailsResponse } from '../types/Product.js';
-import { PurchaseResponse } from '../types/Payment.js';
+import { PurchaseResponse, X402PaymentRequirements, ThirdwebX402PrepareResponse } from '../types/Payment.js';
 import { clientWalletService } from './globalWallet.js';
+import { AgentWalletConfig } from '../agents-api/services/agentManager.js';
 
 export class ApiClient {
   private baseUrl: string;
+  private agentWallet: AgentWalletConfig | null = null;
 
-  constructor() {
+  constructor(agentWallet?: AgentWalletConfig) {
     this.baseUrl = process.env.API_BASE_URL || 'http://localhost:3001/api';
+    this.agentWallet = agentWallet || null;
   }
 
   async searchProducts(query: string, options?: {
@@ -102,9 +105,9 @@ export class ApiClient {
         } 
         
         try {
-          // Step 2: Prepare x402 payment using global wallet service
+          // Step 2: Prepare x402 payment using agent-specific wallet
           console.log(`🔑 Preparing x402 payment signature...`);
-          const prepareResult = await clientWalletService.prepareX402Payment(productId, paymentRequirements);
+          const prepareResult = await this.prepareX402Payment(productId, paymentRequirements);
           const { paymentHeader } = prepareResult.result;
 
           // Step 3: Retry purchase with x-payment header
@@ -161,6 +164,21 @@ export class ApiClient {
       return response.ok;
     } catch (error) {
       return false;
+    }
+  }
+
+  async prepareX402Payment(productId: string, requirements: X402PaymentRequirements): Promise<ThirdwebX402PrepareResponse> {
+    // Use agent-specific wallet if available, otherwise fall back to global wallet service
+    if (this.agentWallet) {
+      // Create a temporary AgentWalletService instance with the agent's wallet
+      const { AgentWalletService } = await import('./agentWalletService.js');
+      const tempWalletService = new AgentWalletService();
+      // Set the wallet directly (bypassing the createOrGetAgentWallet method)
+      (tempWalletService as any).agentWallet = this.agentWallet;
+      return await tempWalletService.prepareX402Payment(productId, requirements);
+    } else {
+      // Fall back to global wallet service for CLI usage
+      return await clientWalletService.prepareX402Payment(productId, requirements);
     }
   }
 }

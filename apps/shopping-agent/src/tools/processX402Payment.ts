@@ -1,5 +1,4 @@
 import { ToolResult } from '../types/Tool.js';
-import { ApiClient } from '../services/apiClient.js';
 
 export interface PaymentToolInput {
   productId: string;
@@ -41,11 +40,20 @@ export async function processX402Payment(
       };
     }
 
-    const apiClient = new ApiClient();
+    // Get the agent instance to access its ApiClient
+    const { agentInstance } = await import('../agent/tools.js');
+    if (!agentInstance || !agentInstance.apiClient) {
+      return {
+        success: false,
+        data: null,
+        error: 'Agent instance not available',
+        observation: 'Payment failed: Agent instance not properly initialized. Please try again.'
+      };
+    }
 
     // Execute purchase - this handles the entire x402 flow internally
     console.log(`💸 Executing purchase for ${productName}...`);
-    const purchaseResponse = await apiClient.executePurchase(productId);
+    const purchaseResponse = await agentInstance.apiClient.executePurchase(productId);
 
     if (purchaseResponse.success) {
       return {

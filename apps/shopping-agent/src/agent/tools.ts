@@ -9,6 +9,8 @@ export function setAgentInstance(agent: any) {
   agentInstance = agent;
 }
 
+export { agentInstance };
+
 /**
  * Product Search Tool with usage rules in description
  */

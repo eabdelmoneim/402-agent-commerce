@@ -7,6 +7,7 @@ import { PromptTemplate } from "@langchain/core/prompts";
 import { getAgentTools, setAgentInstance } from './tools.js';
 import { ApiClient } from '../services/apiClient.js';
 import { clientWalletService } from '../services/globalWallet.js';
+import { AgentWalletConfig } from '../agents-api/services/agentManager.js';
 
 export class ShoppingAgent {
   private llm: ChatOpenAI;
@@ -14,14 +15,16 @@ export class ShoppingAgent {
   private apiClient: ApiClient;
   private conversationHistory: BaseMessage[] = [];
   private lastSearchResults: any[] = []; // Store last product search results
+  private agentWallet: AgentWalletConfig | null = null; // Agent-specific wallet
 
-  constructor(openaiApiKey: string) {
+  constructor(openaiApiKey: string, agentWallet?: AgentWalletConfig) {
     this.llm = new ChatOpenAI({
       openAIApiKey: openaiApiKey,
       modelName: "gpt-4.1",
       temperature: 0,
     });
-    this.apiClient = new ApiClient();
+    this.agentWallet = agentWallet || null;
+    this.apiClient = new ApiClient(this.agentWallet || undefined);
   }
 
   async initialize(): Promise<void> {
@@ -60,11 +63,13 @@ CRITICAL RULES:
 1. You MUST end with "Final Answer:" followed by your response. Never provide direct responses without this format.
 2. WORKFLOW: Search → Present Results → Wait for User Confirmation → Process Payment (in separate requests)
 3. When users ask about products, you MUST use the get_products tool first. Never assume what's available.
-4. After getting search results, present them clearly and ask which product they want to buy. Do NOT process payment yet.
-5. When users confirm a purchase (e.g., "buy the MacBook Pro", "yes, buy it"), then use process_payment tool.
-6. For payments, you MUST include all required parameters: productId, productName, price, and userConfirmed=true.
-7. Use conversation context to remember previous search results and product details.
-8. NEVER process payment without explicit user confirmation. Always ask "Which product would you like to buy?" after showing search results.
+4. After getting search results, you MUST include the complete product list from the tool observation in your Final Answer. Do NOT summarize or paraphrase the product list.
+5. PRODUCT LIST FORMAT: Each product must be on its own line in this exact format: "1. Product Name - $X.XX USDC (ID: product-id)"
+6. Present the complete product list clearly and ask which product they want to buy. Do NOT process payment yet.
+7. When users confirm a purchase (e.g., "buy the MacBook Pro", "yes, buy it"), then use process_payment tool.
+8. For payments, you MUST include all required parameters: productId, productName, price, and userConfirmed=true.
+9. Use conversation context to remember previous search results and product details.
+10. NEVER process payment without explicit user confirmation. Always ask "Which product would you like to buy?" after showing search results.
 
 Previous conversation context: {chat_history}
 
@@ -149,6 +154,16 @@ Thought: {agent_scratchpad}`);
   }
 
   async getWalletInfo() {
+    // Use agent-specific wallet if available, otherwise fall back to global wallet
+    if (this.agentWallet) {
+      return {
+        walletAddress: this.agentWallet.address,
+        role: this.agentWallet.role,
+        identifier: this.agentWallet.identifier
+      };
+    }
+    
+    // Fallback to global wallet service for CLI compatibility
     const wallet = clientWalletService.getClientWallet();
     if (wallet) {
       return {

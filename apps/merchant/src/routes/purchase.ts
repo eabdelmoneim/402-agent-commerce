@@ -69,9 +69,48 @@ router.post('/:productId', async (req, res) => {
         status: settlementResult.status
       });
 
-      // Extract transaction details from thirdweb response if available
-      const transactionHash = settlementResult.responseHeaders?.['x-transaction-hash'] || 
-                            `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 8)}`;
+      console.log(`✅ Settlement result for product ${productId}:`, settlementResult);
+
+      // Get transaction hash from thirdweb API using transaction ID
+      let transactionHash = `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 8)}`; // fallback
+      
+      if (settlementResult.paymentReceipt?.transaction) {
+        try {
+          const thirdwebSecretKey = process.env.THIRDWEB_SECRET_KEY;
+          const thirdwebApiUrl = process.env.THIRDWEB_API_URL || 'https://api.thirdweb.com/v1';
+          
+          if (thirdwebSecretKey) {
+            console.log(`🔍 Fetching transaction details for ID: ${settlementResult.paymentReceipt.transaction}`);
+            
+            const transactionResponse = await fetch(`${thirdwebApiUrl}/transactions/${settlementResult.paymentReceipt.transaction}`, {
+              method: 'GET',
+              headers: {
+                'x-secret-key': thirdwebSecretKey
+              }
+            });
+
+            if (transactionResponse.ok) {
+              const transactionData = await transactionResponse.json();
+              console.log(`📋 Transaction details:`, transactionData);
+              
+              if (transactionData.result?.transactionHash) {
+                transactionHash = transactionData.result.transactionHash;
+                console.log(`✅ Retrieved transaction hash: ${transactionHash}`);
+              } else {
+                console.warn(`⚠️ No transaction hash found in response:`, transactionData);
+              }
+            } else {
+              console.error(`❌ Failed to fetch transaction details: ${transactionResponse.status} ${transactionResponse.statusText}`);
+            }
+          } else {
+            console.warn(`⚠️ THIRDWEB_SECRET_KEY not configured, using fallback transaction hash`);
+          }
+        } catch (error) {
+          console.error(`❌ Error fetching transaction details:`, error);
+        }
+      } else {
+        console.warn(`⚠️ No transaction ID in payment receipt, using fallback transaction hash`);
+      }
 
       const response: PurchaseResponse = {
         success: true,
@@ -93,7 +132,7 @@ router.post('/:productId', async (req, res) => {
       }
 
       return res.json(response);
-    } else {
+    } else if(settlementResult.status === 402) {
       // Payment required - return thirdweb's response with proper x402 format
       console.log(`💳 Payment required for product ${productId}:`, {
         status: settlementResult.status,
@@ -108,6 +147,9 @@ router.post('/:productId', async (req, res) => {
       }
 
       // Return thirdweb's response body with the status from thirdweb
+      return res.status(settlementResult.status).json(settlementResult.responseBody);
+    } else {
+      console.log(`❌ Payment failed for product ${productId}:`, settlementResult.responseBody);
       return res.status(settlementResult.status).json(settlementResult.responseBody);
     }
   } catch (error: any) {

@@ -12,7 +12,7 @@ async function main() {
     const requiredEnvVars = [
       'OPENAI_API_KEY',
       'THIRDWEB_SECRET_KEY',
-      'CLIENT_WALLET_IDENTIFIER'
+      'CLI_AGENT_WALLET_IDENTIFIER'
     ];
 
     const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
