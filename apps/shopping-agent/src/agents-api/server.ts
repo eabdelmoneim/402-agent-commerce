@@ -509,12 +509,14 @@ app.use((req, res) => {
 
 // Start server  
 // Always prioritize PORT (set by hosting platform) over custom AGENTS_API_PORT
-const PORT = parseInt(process.env.PORT) || parseInt(process.env.AGENTS_API_PORT || '3002');
+console.log(`🔧 Raw PORT env var: "${process.env.PORT || 'undefined'}" (type: ${typeof process.env.PORT})`);
+console.log(`🔧 Raw AGENTS_API_PORT env var: "${process.env.AGENTS_API_PORT || 'undefined'}" (type: ${typeof process.env.AGENTS_API_PORT})`);
+console.log(`🔧 parseInt(process.env.PORT): ${parseInt(process.env.PORT || '0')} (type: ${typeof parseInt(process.env.PORT || '0')})`);
+
+const PORT = parseInt(process.env.PORT || '0') || parseInt(process.env.AGENTS_API_PORT || '3002');
 server.listen(PORT, () => {
   const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
-  console.log(`🔧 PORT env var: ${process.env.PORT || 'not set'}`);
-  console.log(`🔧 AGENTS_API_PORT env var: ${process.env.AGENTS_API_PORT || 'not set'}`);
-  console.log(`🔧 Final PORT used: ${PORT}`);
+  console.log(`🔧 Final PORT used: ${PORT} (type: ${typeof PORT})`);
   console.log(`🚀 Agents API server running on ${host}:${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔑 OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? '✅ Set' : '❌ Missing'}`);
