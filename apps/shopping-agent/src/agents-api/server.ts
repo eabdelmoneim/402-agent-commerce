@@ -193,12 +193,20 @@ async function getOrCreateShoppingAgent(agentName: string): Promise<ShoppingAgen
 
 // Health check endpoint
 app.get('/health', (_req, res) => {
+  console.log('🏥 Health check requested');
   res.json({
     status: 'healthy',
     service: 'agents-api',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    corsHeaders: 'should be present'
   });
+});
+
+// Simple test endpoint
+app.get('/test-cors', (_req, res) => {
+  console.log('🧪 CORS test endpoint hit');
+  res.json({ message: 'CORS test successful', timestamp: Date.now() });
 });
 
 // API info endpoint
