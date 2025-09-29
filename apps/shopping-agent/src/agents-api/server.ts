@@ -511,6 +511,9 @@ app.use((req, res) => {
 const PORT = process.env.PORT || process.env.AGENTS_API_PORT || 3002;
 server.listen(PORT, () => {
   const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+  console.log(`🔧 PORT env var: ${process.env.PORT || 'not set'}`);
+  console.log(`🔧 AGENTS_API_PORT env var: ${process.env.AGENTS_API_PORT || 'not set'}`);
+  console.log(`🔧 Final PORT used: ${PORT}`);
   console.log(`🚀 Agents API server running on ${host}:${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔑 OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? '✅ Set' : '❌ Missing'}`);
