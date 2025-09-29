@@ -507,8 +507,9 @@ app.use((req, res) => {
   });
 });
 
-// Start server
-const PORT = process.env.PORT || process.env.AGENTS_API_PORT || 3002;
+// Start server  
+// Always prioritize PORT (set by hosting platform) over custom AGENTS_API_PORT
+const PORT = parseInt(process.env.PORT) || parseInt(process.env.AGENTS_API_PORT || '3002');
 server.listen(PORT, () => {
   const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
   console.log(`🔧 PORT env var: ${process.env.PORT || 'not set'}`);
