@@ -81,11 +81,28 @@ app.use(helmet());
 app.use(compression());
 
 // CORS configuration
+let allowedOrigins: string[];
+
+if (process.env.FRONTEND_URL) {
+  // Production: Only allow the specified frontend URL
+  allowedOrigins = [process.env.FRONTEND_URL];
+  console.log('🔒 CORS: Production mode - only allowing:', process.env.FRONTEND_URL);
+} else {
+  // Development: Allow localhost variants
+  allowedOrigins = [
+    'http://localhost:3000',           // Local frontend development
+    'http://localhost:5173',           // Vite dev server
+    'https://localhost:3000',          // Local HTTPS
+    'https://localhost:5173',          // Local HTTPS Vite
+  ];
+  console.log('🔓 CORS: Development mode - allowing localhost origins');
+}
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-production-domain.com'] 
-    : ['http://localhost:3000'], // Only allow frontend
-  credentials: true
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-payment']
 }));
 
 // Body parsing middleware
