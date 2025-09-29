@@ -452,7 +452,7 @@ app.use((req, res) => {
 });
 
 // Start server
-const PORT = process.env.AGENTS_API_PORT || 3002;
+const PORT = process.env.PORT || process.env.AGENTS_API_PORT || 3002;
 server.listen(PORT, () => {
   console.log(`🚀 Agents API server running on port ${PORT}`);
   console.log(`📡 WebSocket server running on ws://localhost:${PORT}`);
