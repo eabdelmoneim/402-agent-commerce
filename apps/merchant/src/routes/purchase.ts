@@ -8,6 +8,20 @@ const router: express.Router = express.Router();
 
 let thirdwebX402Service: ThirdwebX402Service;
 
+// Helper function to detect base URL from request
+function getBaseUrl(req: express.Request): string {
+  // If BASE_URL is explicitly set, use it
+  if (process.env.BASE_URL) {
+    return process.env.BASE_URL;
+  }
+  
+  // Auto-detect from request headers
+  const protocol = req.get('x-forwarded-proto') || req.protocol || 'http';
+  const host = req.get('x-forwarded-host') || req.get('host') || 'localhost:3001';
+  
+  return `${protocol}://${host}`;
+}
+
 export function initializePurchaseRouter(walletService: ThirdwebWalletService): express.Router {
   // Initialize thirdweb x402 service with wallet configuration
   const merchantWallet = walletService.getMerchantFacilitatorWallet();
@@ -16,7 +30,6 @@ export function initializePurchaseRouter(walletService: ThirdwebWalletService): 
   }
 
   const thirdwebSecretKey = process.env.THIRDWEB_SECRET_KEY;
-  const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
 
   if (!thirdwebSecretKey) {
     throw new Error('THIRDWEB_SECRET_KEY environment variable is required');
@@ -25,7 +38,7 @@ export function initializePurchaseRouter(walletService: ThirdwebWalletService): 
   thirdwebX402Service = new ThirdwebX402Service({
     secretKey: thirdwebSecretKey,
     walletConfig: merchantWallet,
-    baseUrl
+    baseUrl: process.env.BASE_URL || 'http://localhost:3001' // Fallback for initialization
   });
 
   console.log('✅ Thirdweb x402 service initialized with facilitator');
@@ -49,7 +62,9 @@ router.post('/:productId', async (req, res) => {
     }
 
     // Use thirdweb's settlePayment to handle the x402 payment
-    const resourceUrl = `${process.env.BASE_URL}/api/purchase/${productId}`;
+    // Dynamically detect the base URL from the current request
+    const baseUrl = getBaseUrl(req);
+    const resourceUrl = `${baseUrl}/api/purchase/${productId}`;
     const method = req.method.toUpperCase();
 
     console.log(`🔄 Processing payment for ${product.name} using thirdweb x402... with payment header: ${paymentData}`);
