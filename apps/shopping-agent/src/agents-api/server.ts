@@ -510,10 +510,15 @@ app.use((req, res) => {
 // Start server
 const PORT = process.env.PORT || process.env.AGENTS_API_PORT || 3002;
 server.listen(PORT, () => {
-  console.log(`🚀 Agents API server running on port ${PORT}`);
-  console.log(`📡 WebSocket server running on ws://localhost:${PORT}`);
-  console.log(`📡 Health check: http://localhost:${PORT}/health`);
-  console.log(`📚 API docs: http://localhost:${PORT}/api`);
+  const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+  console.log(`🚀 Agents API server running on ${host}:${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔑 OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? '✅ Set' : '❌ Missing'}`);
+  console.log(`🔑 THIRDWEB_SECRET_KEY: ${process.env.THIRDWEB_SECRET_KEY ? '✅ Set' : '❌ Missing'}`);
+  console.log(`🔑 FRONTEND_URL: ${process.env.FRONTEND_URL || '❌ Not set'}`);
+  console.log(`📡 WebSocket server running on ws://${host}:${PORT}`);
+  console.log(`📡 Health check: http://${host}:${PORT}/health`);
+  console.log(`📚 API docs: http://${host}:${PORT}/api`);
 });
 
 export default app;
