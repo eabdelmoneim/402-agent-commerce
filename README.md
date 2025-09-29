@@ -296,6 +296,62 @@ Which one would you like to purchase?
 - Enhanced product search capabilities
 - Web interface for the shopping agent
 
+## Production Enhancements (Recommended)
+
+This template is intentionally minimal for local demos. For production:
+
+- Persistence
+  - Store agent sessions in Redis/DB so `ShoppingAgent` instances can be rehydrated after restarts.
+  - Save purchases to a DB with fields: `agentName`, `productId`, `amount`, `currency`, `transactionId`, `transactionHash`, `status`, timestamps.
+  - Persist agent wallets (identifier, address, smart wallet address) for auditing.
+
+- Transactions
+  - Background worker to poll thirdweb Transactions API and update `status`/`transactionHash` until confirmed.
+  - Idempotency keys for purchase requests to prevent duplicate charges on retries.
+  - Nightly reconciliation of local purchases with chain/thirdweb state.
+
+- Reliability/Scale
+  - Queue long ops (payments/lookups) via BullMQ/SQS; run a worker.
+  - Pub/Sub (Redis/NATS) for WebSocket status fan-out across instances.
+  - Rate limiting and circuit breakers for external APIs.
+
+- Security
+  - Secrets manager for `THIRDWEB_SECRET_KEY` (Vault/SSM/Doppler) instead of `.env`.
+  - AuthN/AuthZ to restrict agent operations per user; scoped API keys.
+  - Strict request validation (Zod) and locked CORS.
+
+- Observability
+  - Structured logs with `requestId`/`agentName`; metrics and tracing (Prometheus/Otel).
+  - Audit trail for wallet creation, payments, and balance checks.
+
+- Frontend
+  - Persist chats/agents/purchases server-side; hydrate on load rather than only `localStorage`.
+  - Dedicated Purchases page backed by DB, with status badges and BaseScan links.
+
+Example schema (sketch):
+
+```sql
+-- agents
+id uuid pk,
+name text unique not null,
+wallet_identifier text not null,
+address text not null,
+smart_wallet_address text,
+created_at timestamptz default now()
+
+-- purchases
+id uuid pk,
+agent_name text not null,
+product_id text not null,
+amount numeric(38,18) not null,
+currency text not null,
+transaction_id text,
+transaction_hash text,
+status text not null,
+created_at timestamptz default now(),
+updated_at timestamptz default now()
+```
+
 ## Contributing
 
 1. Fork the repository

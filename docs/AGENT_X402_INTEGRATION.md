@@ -118,7 +118,7 @@ async executePurchase(productId: string): Promise<PurchaseResponse> {
 }
 ```
 
-### 3. Smart Wallet Integration
+### 3. Agent Wallet Integration
 
 ```typescript
 // Global wallet service for x402 payments
@@ -300,120 +300,7 @@ export class ShoppingAgent {
 }
 ```
 
-## x402 Server Implementation
-
-### 1. Server-Side x402 Service
-
-```typescript
-// Server x402 service using thirdweb SDK
-export class ThirdwebX402Service {
-  private thirdwebFacilitator: any;
-
-  constructor(config: ThirdwebX402Config) {
-    this.client = createThirdwebClient({ secretKey: config.secretKey });
-    
-    this.thirdwebFacilitator = facilitator({
-      client: this.client,
-      serverWalletAddress: config.walletConfig.address as `0x${string}`, // thirdweb Server Wallet address
-    });
-  }
-
-  async settlePayment(resourceUrl: string, method: string, paymentData: string | null, product: GeneratedProduct) {
-    const result = await settlePayment({
-      resourceUrl,
-      method: method.toUpperCase(),
-      paymentData,
-      payTo: this.config.walletConfig.address as `0x${string}`, // thirdweb Server Wallet address
-      network: baseSepolia,
-      price: `$${product.price}`,
-      routeConfig: {
-        description: `Purchase of ${product.name} for $${product.price} USDC`,
-        mimeType: "application/json" as const,
-        outputSchema: {
-          productId: product.id,
-          productName: product.name,
-          price: product.price,
-          currency: 'USDC'
-        }
-      },
-      facilitator: this.thirdwebFacilitator,
-    });
-
-    return result;
-  }
-}
-```
-
-### 2. Purchase Route with x402
-
-```typescript
-// Purchase route with x402 flow
-router.post('/:productId', async (req, res) => {
-  try {
-    const { productId } = req.params;
-    const paymentData = req.headers['x-payment'] as string;
-    const product = productCache.get(productId);
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        productId,
-        error: 'Product not found'
-      });
-    }
-
-    // Use thirdweb's settlePayment for real blockchain transactions
-    const resourceUrl = `${process.env.BASE_URL}/api/purchase/${productId}`;
-    const method = req.method.toUpperCase();
-
-    const settlementResult = await thirdwebX402Service.settlePayment(
-      resourceUrl,
-      method,
-      paymentData,
-      product
-    );
-
-    if (settlementResult.status === 200) {
-      // Payment successful - real blockchain transaction completed
-      const transactionHash = settlementResult.responseHeaders?.['x-transaction-hash'] || 
-                            `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 8)}`;
-
-      return res.json({
-        success: true,
-        productId,
-        transactionHash,
-        purchaseDetails: {
-          product,
-          amount: product.price,
-          currency: 'USDC',
-          network: 'base-sepolia'
-        }
-      });
-    } else {
-      // Payment required - generate x402 requirements
-      const paymentRequirements = thirdwebX402Service.generatePaymentRequirements(product);
-
-      // Set response headers from thirdweb
-      if (settlementResult.responseHeaders) {
-        for (const [key, value] of Object.entries(settlementResult.responseHeaders)) {
-          res.set(key, value as string);
-        }
-      }
-
-      // Return x402 requirements with 402 status
-      return res.status(402).json(paymentRequirements);
-    }
-  } catch (error: any) {
-    console.error('Error processing purchase:', error);
-    return res.status(500).json({
-      success: false,
-      productId: req.params.productId,
-      error: error.message
-    });
-  }
-});
-```
-
+> Server-side x402 implementation has been consolidated in [Thirdweb x402 Integration](./THIRDWEB_X402_INTEGRATION.md#-server-side-x402-api-endpoint-with-settlepayment). This document focuses on the agent tooling and client workflow.
 ## Agent Workflow with x402
 
 ### 1. Two-Step Shopping Flow

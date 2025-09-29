@@ -9,8 +9,8 @@ export interface PaymentToolInput {
 
 export interface PaymentToolOutput extends ToolResult {
   paymentHeader?: string;
-  paymentData?: any;
-  transactionHash?: string;
+  paymentPayload?: any;
+  transactionId?: string;
 }
 
 export async function processX402Payment(
@@ -61,8 +61,8 @@ export async function processX402Payment(
         data: {
           purchaseResponse
         },
-        transactionHash: purchaseResponse.transactionHash,
-        observation: `✅ Payment successful! Purchased "${productName}" for $${price} USDC.\n🔗 Transaction Hash: ${purchaseResponse.transactionHash}\n💰 Amount: $${price} USDC\n🌐 Network: Base Sepolia`
+        transactionId: purchaseResponse.transactionId,
+        observation: `✅ Payment successful! Purchased "${productName}" for $${price} USDC.\n🧾 Transaction ID: ${purchaseResponse.transactionId}\n💰 Amount: $${price} USDC\n🌐 Network: Base Sepolia`
       };
     } else {
       return {

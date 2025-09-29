@@ -108,6 +108,7 @@ export class AgentWalletService {
       }
 
       const result: ThirdwebX402PrepareResponse = await response.json();
+      console.log(`✅ x402 payment prepare result:`, result);
 
       console.log('✅ x402 payment prepared successfully:', {
         productId,

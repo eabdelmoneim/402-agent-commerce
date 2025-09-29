@@ -25,7 +25,7 @@ export interface PurchaseRequest {
 export interface PurchaseResponse {
   success: boolean;
   productId: string;
-  transactionHash?: string;
+  transactionId?: string;
   purchaseDetails?: {
     product: any;
     amount: string;

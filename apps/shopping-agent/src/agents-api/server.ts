@@ -395,6 +395,35 @@ app.get('/api/agents/sessions', (_req, res) => {
   }
 });
 
+// Proxy: Get transaction details by ID (secure, uses secret key)
+app.get('/api/transactions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const thirdwebSecretKey = process.env.THIRDWEB_SECRET_KEY;
+    const thirdwebApiUrl = process.env.THIRDWEB_API_URL || 'https://api.thirdweb.com/v1';
+
+    if (!thirdwebSecretKey) {
+      return res.status(500).json({ success: false, error: 'Server not configured for transaction lookup' });
+    }
+
+    const resp = await fetch(`${thirdwebApiUrl}/transactions/${id}`, {
+      method: 'GET',
+      headers: { 'x-secret-key': thirdwebSecretKey }
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      return res.status(resp.status).json({ success: false, error: text });
+    }
+
+    const data = await resp.json();
+    return res.json({ success: true, result: data.result });
+  } catch (error: any) {
+    console.error('Error fetching transaction by id:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to fetch transaction' });
+  }
+});
+
 // Error handling middleware
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Unhandled error:', err);

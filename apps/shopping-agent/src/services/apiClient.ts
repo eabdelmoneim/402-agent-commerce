@@ -141,7 +141,7 @@ export class ApiClient {
       const data: PurchaseResponse = await response.json();
       
       if (data.success) {
-        console.log(`✅ Purchase successful! Transaction: ${data.transactionHash}`);
+        console.log(`✅ Purchase successful! Transaction ID: ${data.transactionId}`);
       } else {
         console.log(`❌ Purchase failed: ${data.error}`);
       }

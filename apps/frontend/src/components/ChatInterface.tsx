@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, RefreshCw, AlertCircle, Check, Copy, ArrowLeft, Users } from 'lucide-react';
+import { Send, Bot, User, Loader2, RefreshCw, AlertCircle, Check, Copy, ArrowLeft, Users, Receipt } from 'lucide-react';
 import { ChatMessage, Agent, StatusMessage } from '../types';
 import { AgentService } from '../services/agentService';
 import { WebSocketService, StatusUpdate } from '../services/websocketService';
@@ -20,6 +20,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ agent, onBackToAge
   const [isCheckingBalance, setIsCheckingBalance] = useState(false);
   const [balanceError, setBalanceError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showPurchases, setShowPurchases] = useState(false);
+  const [purchases, setPurchases] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsService = WebSocketService.getInstance();
 
@@ -112,6 +114,32 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ agent, onBackToAge
   const openFaucet = () => {
     window.open('https://faucet.circle.com/', '_blank', 'noopener,noreferrer');
   };
+
+  // Capture transaction IDs from successful tool observations
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (last && last.type === 'agent' && last.content.includes('Transaction ID:')) {
+      const match = last.content.match(/Transaction ID:\s*(\S+)/);
+      if (match) {
+        const id = match[1];
+        // fetch transaction details via proxy
+        AgentService.getTransactionById(id).then((tx) => {
+          const etherscan = tx.transactionHash ? `https://sepolia.basescan.org/tx/${tx.transactionHash}` : undefined;
+          setPurchases((prev) => [
+            {
+              id,
+              status: tx.status,
+              transactionHash: tx.transactionHash,
+              amount: agent.balance || '',
+              link: etherscan,
+              createdAt: Date.now()
+            },
+            ...prev
+          ]);
+        }).catch(() => {/* ignore */});
+      }
+    }
+  }, [messages]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,12 +281,53 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ agent, onBackToAge
 
   return (
     <div className="chat-interface">
+      {showPurchases && (
+        <div className="purchases-panel">
+          <div className="status-updates-header">
+            <h4>Purchases</h4>
+            <button onClick={() => setShowPurchases(false)} className="clear-status-btn" title="Close">Close</button>
+          </div>
+          <div className="status-updates-list">
+            {purchases.length === 0 && (
+              <div className="status-update">
+                No purchases yet.
+              </div>
+            )}
+            {purchases.map((p, idx) => (
+              <div key={idx} className={`status-update ${String(p.status || '').toLowerCase()}`}>
+                <div className="status-update-time">
+                  {new Date(p.createdAt).toLocaleString()}
+                </div>
+                <div className="status-update-message">
+                  <strong>Status:</strong> {p.status || 'UNKNOWN'}
+                </div>
+                <div className="status-update-message">
+                  <strong>Transaction ID:</strong> {p.id}
+                </div>
+                {p.transactionHash && (
+                  <div className="status-update-message">
+                    <strong>Tx Hash:</strong> <a href={`https://sepolia.basescan.org/tx/${p.transactionHash}`} target="_blank" rel="noreferrer">{p.transactionHash.slice(0, 10)}...</a>
+                  </div>
+                )}
+                {p.amount && (
+                  <div className="status-update-message">
+                    <strong>Amount:</strong> {p.amount}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="chat-header">
         <div className="chat-header-top">
           <div className="nav-buttons">
             <button onClick={onBackToAgents} className="nav-btn" title="Back to agents">
               <ArrowLeft size={16} />
             </button>
+          <button onClick={() => setShowPurchases(true)} className="nav-btn" title="View purchases">
+            <Receipt size={16} />
+          </button>
             <button onClick={onSwitchAgent} className="nav-btn" title="Switch agent">
               <Users size={16} />
             </button>

@@ -36,7 +36,7 @@ export interface PaymentRequirementsResponse {
 export interface PurchaseResponse {
   success: boolean;
   productId: string;
-  transactionHash?: string;
+  transactionId?: string;
   purchaseDetails?: {
     product: any;
     amount: string;
@@ -83,7 +83,7 @@ export interface ThirdwebX402PrepareRequest {
 
 export interface ThirdwebX402PrepareResponse {
   result: {
-    paymentData: {
+    paymentPayload: {
       x402Version: number;
       scheme: string;
       network: string;

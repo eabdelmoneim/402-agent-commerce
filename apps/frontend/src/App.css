@@ -1,5 +1,14 @@
 /* App-specific styles - most styles are in index.css */
 
+/* Layout sizing */
+.chat-interface {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Chat Interface Balance Styles */
 .chat-header {
   padding: 0.5rem 1rem;
@@ -48,6 +57,7 @@
   align-items: center;
   gap: 1rem;
   flex: 1;
+  min-width: 0; /* allow flex children to shrink */
 }
 
 .agent-name {
@@ -76,6 +86,9 @@
   border-radius: 3px;
   white-space: nowrap;
   border: 1px solid #e5e7eb;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .wallet-info .copy-btn {
@@ -630,6 +643,22 @@
   padding: 1rem;
   margin: 1rem 0;
   text-align: center;
+}
+
+/* Responsive tweaks */
+@media (max-width: 900px) {
+  .chat-interface { max-width: 100%; }
+}
+
+@media (max-width: 640px) {
+  .chat-header { padding: 0.4rem 0.5rem; }
+  .agent-info-row { flex-wrap: wrap; gap: 0.4rem; height: auto; }
+  .info-items { flex-wrap: wrap; gap: 0.5rem; }
+  .agent-name { font-size: 0.8rem; }
+  .wallet-info .wallet-address { font-size: 0.6rem; max-width: 160px; }
+  .balance-info .balance-amount { font-size: 0.7rem; }
+  .messages-container { padding: 0.5rem; }
+  .nav-buttons { gap: 0.35rem; }
 }
 
 .next-steps h3 {

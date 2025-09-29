@@ -19,10 +19,12 @@ Successfully implemented **complete x402 payment integration** using thirdweb's 
 
 ---
 
-## 🤖 **Client-Side: AI Agent with thirdweb Server Wallet**
+## 🤖 **Client-Side: AI Agent with thirdweb Server Wallet & x402 Tool**
 
 ### Overview
 The client-side implementation focuses on **AI agent wallet management** and **payment preparation** using thirdweb's APIs. The agent uses a thirdweb Server Wallet for all x402 payment operations.
+
+In this template, the AI agent uses a dedicated **thirdweb x402 tool** that fully handles the 402 protocol end‑to‑end: detecting `402 Payment Required`, preparing the x402 payment via thirdweb, and retrying the request with the `x-payment` header. For a deeper dive into the agent tooling, see the companion guide: [Agent x402 Integration](./AGENT_X402_INTEGRATION.md).
 
 ### Key Components
 

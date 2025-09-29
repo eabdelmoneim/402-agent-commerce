@@ -52,7 +52,7 @@ router.post('/:productId', async (req, res) => {
     const resourceUrl = `${process.env.BASE_URL}/api/purchase/${productId}`;
     const method = req.method.toUpperCase();
 
-    console.log(`🔄 Processing payment for ${product.name} using thirdweb x402...`);
+    console.log(`🔄 Processing payment for ${product.name} using thirdweb x402... with payment header: ${paymentData}`);
 
     const settlementResult = await thirdwebX402Service.settlePayment(
       resourceUrl,
@@ -71,51 +71,13 @@ router.post('/:productId', async (req, res) => {
 
       console.log(`✅ Settlement result for product ${productId}:`, settlementResult);
 
-      // Get transaction hash from thirdweb API using transaction ID
-      let transactionHash = `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 8)}`; // fallback
-      
-      if (settlementResult.paymentReceipt?.transaction) {
-        try {
-          const thirdwebSecretKey = process.env.THIRDWEB_SECRET_KEY;
-          const thirdwebApiUrl = process.env.THIRDWEB_API_URL || 'https://api.thirdweb.com/v1';
-          
-          if (thirdwebSecretKey) {
-            console.log(`🔍 Fetching transaction details for ID: ${settlementResult.paymentReceipt.transaction}`);
-            
-            const transactionResponse = await fetch(`${thirdwebApiUrl}/transactions/${settlementResult.paymentReceipt.transaction}`, {
-              method: 'GET',
-              headers: {
-                'x-secret-key': thirdwebSecretKey
-              }
-            });
-
-            if (transactionResponse.ok) {
-              const transactionData = await transactionResponse.json();
-              console.log(`📋 Transaction details:`, transactionData);
-              
-              if (transactionData.result?.transactionHash) {
-                transactionHash = transactionData.result.transactionHash;
-                console.log(`✅ Retrieved transaction hash: ${transactionHash}`);
-              } else {
-                console.warn(`⚠️ No transaction hash found in response:`, transactionData);
-              }
-            } else {
-              console.error(`❌ Failed to fetch transaction details: ${transactionResponse.status} ${transactionResponse.statusText}`);
-            }
-          } else {
-            console.warn(`⚠️ THIRDWEB_SECRET_KEY not configured, using fallback transaction hash`);
-          }
-        } catch (error) {
-          console.error(`❌ Error fetching transaction details:`, error);
-        }
-      } else {
-        console.warn(`⚠️ No transaction ID in payment receipt, using fallback transaction hash`);
-      }
+      // Transaction lookup now handled by Agents API proxy; return the transaction ID directly
+      const transactionId = settlementResult.paymentReceipt?.transaction;
 
       const response: PurchaseResponse = {
         success: true,
         productId,
-        transactionHash,
+        transactionId,
         purchaseDetails: {
           product,
           amount: product.price,

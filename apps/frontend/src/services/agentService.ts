@@ -31,4 +31,10 @@ export class AgentService {
       status: response.data.status
     };
   }
+
+  static async getTransactionById(id: string): Promise<any> {
+    const base = AGENTS_API_URL.replace(/\/$/, '').replace(/\/api$/, '');
+    const response = await axios.get(`${base}/api/transactions/${id}`);
+    return response.data.result;
+  }
 }
