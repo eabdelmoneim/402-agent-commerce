@@ -43,23 +43,23 @@ curl "http://localhost:3001/api/products?query=TV&maxPrice=5"
 ## Project Architecture
 
 ### Monorepo Structure
-- **`apps/client/`**: LangChain ReAct shopping agent using GPT-4o and thirdweb smart wallets
-- **`apps/server/`**: Express.js API with AI-generated products and real x402 blockchain payments
+- **`apps/shopping-agent/`**: LangChain ReAct shopping agent using GPT-4o and thirdweb smart wallets
+- **`apps/merchant/`**: Express.js API with AI-generated products and real x402 blockchain payments
 - **`packages/shared-types/`**: Shared TypeScript types between client and server
 
 ### Key Architecture Patterns
 
-1. **LangChain ReAct Agent** (`apps/client/src/agent/ShoppingAgent.ts`)
+1. **LangChain ReAct Agent** (`apps/shopping-agent/src/agent/ShoppingAgent.ts`)
    - Uses `createReactAgent` with `DynamicTool` wrappers
    - Tools: `get_products` for search, `process_payment` for x402 transactions
    - GPT-4o for natural language reasoning and action planning
 
-2. **Global Wallet Service** (`apps/client/src/services/globalWallet.ts`)
+2. **Global Wallet Service** (`apps/shopping-agent/src/services/globalWallet.ts`)
    - Global `clientWalletService` instance to avoid parameter passing
    - Smart wallet creation and management via thirdweb API
    - Must be initialized before agent tools can function
 
-3. **Real x402 Payments** (`apps/server/src/services/thirdwebX402Service.ts`)
+3. **Real x402 Payments** (`apps/merchant/src/services/thirdwebX402Service.ts`)
    - Uses official thirdweb SDK `facilitator` and `settlePayment`
    - Processes actual USDC transactions on Base Sepolia
    - Smart wallet architecture for gasless transactions
@@ -84,7 +84,7 @@ Both client and server require these key environment variables:
 - Client needs `CLIENT_WALLET_IDENTIFIER`, server needs `MERCHANT_WALLET_IDENTIFIER`
 - `USDC_CONTRACT_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e` (Base Sepolia)
 
-Copy from `apps/client/env.example` and `apps/server/env.example` to respective `.env` files.
+Copy from `apps/shopping-agent/env.example` and `apps/merchant/env.example` to respective `.env` files.
 
 ## Key Implementation Details
 
@@ -96,7 +96,7 @@ Copy from `apps/client/env.example` and `apps/server/env.example` to respective 
 
 ### LangChain Tool Integration
 ```typescript
-// apps/client/src/agent/tools.ts
+// apps/shopping-agent/src/agent/tools.ts
 export function getAgentTools(): DynamicTool[] {
   return [
     new DynamicTool({
@@ -114,18 +114,18 @@ export function getAgentTools(): DynamicTool[] {
 
 ### Type Safety
 - Strict TypeScript configuration across all workspaces
-- Custom type declarations in `apps/server/src/types/thirdweb.d.ts` for thirdweb modules
+- Custom type declarations in `apps/merchant/src/types/thirdweb.d.ts` for thirdweb modules
 - Shared types in `packages/shared-types/` for cross-workspace consistency
 
 ## Common Development Tasks
 
 ### Adding New Agent Tools
-1. Create tool function in `apps/client/src/tools/`
-2. Add `DynamicTool` wrapper in `apps/client/src/agent/tools.ts`
+1. Create tool function in `apps/shopping-agent/src/tools/`
+2. Add `DynamicTool` wrapper in `apps/shopping-agent/src/agent/tools.ts`
 3. Update tool description for LangChain prompt context
 
 ### Extending Product Catalog
-- Modify prompts in `apps/server/src/services/productGenerator.ts`
+- Modify prompts in `apps/merchant/src/services/productGenerator.ts`
 - Product generation uses OpenAI to create realistic catalog data
 
 ### Testing Payment Integration

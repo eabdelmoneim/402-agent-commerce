@@ -39,3 +39,11 @@ export interface WalletConfig {
   publicKey: string;
   role: 'client_agent' | 'merchant_facilitator';
 }
+
+export interface AgentWalletConfig {
+  identifier: string;
+  address: string;
+  smartWalletAddress: string;
+  publicKey: string;
+  role: 'client_agent';
+}

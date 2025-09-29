@@ -4,10 +4,10 @@ A modern monorepo showcasing a **ReAct (Reasoning and Acting) AI shopping agent*
 
 ## 📚 Documentation
 
-- **[SETUP.md](./SETUP.md)** - Complete setup guide with environment configuration and troubleshooting
-- **[PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)** - Comprehensive project overview and architecture details
-- **[THIRDWEB_X402_INTEGRATION.md](./THIRDWEB_X402_INTEGRATION.md)** - Client/server x402 implementation details
-- **[AGENT_X402_INTEGRATION.md](./AGENT_X402_INTEGRATION.md)** - Guide for integrating x402 payments into AI agents
+- **[docs/SETUP.md](./docs/SETUP.md)** - Complete setup guide with environment configuration and troubleshooting
+- **[docs/PROJECT_SUMMARY.md](./docs/PROJECT_SUMMARY.md)** - Comprehensive project overview and architecture details
+- **[docs/THIRDWEB_X402_INTEGRATION.md](./docs/THIRDWEB_X402_INTEGRATION.md)** - Client/server x402 implementation details
+- **[docs/AGENT_X402_INTEGRATION.md](./docs/AGENT_X402_INTEGRATION.md)** - Guide for integrating x402 payments into AI agents
 
 ## Architecture
 
@@ -29,13 +29,16 @@ shopping-agent-x402/
 ├── package.json                 # Root workspace configuration
 ├── pnpm-workspace.yaml          # pnpm workspace configuration
 ├── README.md
-├── SETUP.md                     # Detailed setup guide
-├── PROJECT_SUMMARY.md           # Complete project overview
-├── THIRDWEB_X402_INTEGRATION.md # x402 implementation details
 ├── .gitignore
+├── docs/                        # Documentation
+│   ├── SETUP.md                 # Detailed setup guide
+│   ├── PROJECT_SUMMARY.md       # Complete project overview
+│   ├── THIRDWEB_X402_INTEGRATION.md # x402 implementation details
+│   └── AGENT_X402_INTEGRATION.md # Agent integration guide
 ├── apps/
-│   ├── client/                  # ReAct AI Shopping Agent (LangChain)
-│   └── server/                  # Node Express Store API (thirdweb x402)
+│   ├── shopping-agent/          # ReAct AI Shopping Agent (LangChain) + Agents API
+│   ├── merchant/                # Node Express Store API (thirdweb x402)
+│   └── frontend/                # React Web Demo (x402 Protocol Showcase)
 └── packages/                    # Shared packages (future A2A integration)
     └── shared-types/
 ```
@@ -56,15 +59,16 @@ shopping-agent-x402/
 pnpm install
 
 # Copy environment files
-cp apps/server/env.example apps/server/.env
-cp apps/client/env.example apps/client/.env
+cp apps/merchant/env.example apps/merchant/.env
+cp apps/shopping-agent/env.example apps/shopping-agent/.env
+cp apps/frontend/env.example apps/frontend/.env
 
 # Add your API keys to the .env files
 ```
 
 ### Configuration
 
-#### Server Environment (`apps/server/.env`)
+#### Server Environment (`apps/merchant/.env`)
 ```bash
 PORT=3001
 OPENAI_API_KEY=your_openai_key
@@ -76,28 +80,46 @@ NETWORK=base-sepolia
 BASE_URL=http://localhost:3001
 ```
 
-#### Client Environment (`apps/client/.env`)
+#### Client Environment (`apps/shopping-agent/.env`)
 ```bash
 API_BASE_URL=http://localhost:3001/api
 OPENAI_API_KEY=your_openai_api_key
 THIRDWEB_SECRET_KEY=your_thirdweb_secret_key
 THIRDWEB_API_URL=https://api.thirdweb.com/v1
-CLIENT_WALLET_IDENTIFIER=client-sw
+CLI_AGENT_WALLET_IDENTIFIER=cli-agent-sw
 NETWORK=base-sepolia
 USDC_CONTRACT=0x036CbD53842c5426634e7929541eC2318f3dCF7e
+```
+
+#### Frontend Environment (`apps/frontend/.env`)
+```bash
+VITE_AGENTS_API_URL=http://localhost:3002/api
+VITE_WS_URL=ws://localhost:3002
+VITE_FAUCET_URL=https://faucet.circle.com/
+VITE_NETWORK=base-sepolia
+VITE_USDC_CONTRACT=0x036CbD53842c5426634e7929541eC2318f3dCF7e
+```
+
+#### Shopping Agent Environment (`apps/shopping-agent/.env`)
+```bash
+# ... existing config ...
+# Agents API Configuration
+AGENTS_API_PORT=3002
+MERCHANT_API_URL=http://localhost:3001/api
+NODE_ENV=development
 ```
 
 ### Development
 
 ```bash
-# Start both client and server
+# Start all services (agent, merchant, frontend)
 pnpm dev
 
-# Start server only
-pnpm dev:server
-
-# Start client only
-pnpm dev:client
+# Start individual services
+pnpm dev:server      # Merchant API only (port 3001)
+pnpm dev:agents-api  # Agents API only (port 3002)
+pnpm dev:cli         # Shopping agent CLI only
+pnpm dev:frontend    # Web frontend only (port 3000)
 ```
 
 ### Usage
@@ -107,15 +129,30 @@ pnpm dev:client
    pnpm dev
    ```
 
-2. **Test the server API**:
+2. **Access the web demo**:
+   - Open http://localhost:3000 in your browser
+   - Create a shopping agent with a custom name
+   - Fund the agent using the Circle USDC faucet
+   - Chat with your agent to experience x402 payments
+
+3. **API Endpoints**:
+   - **Agents API**: http://localhost:3002/api (agent management and chat - uses merchant API internally)
+   - **Merchant API**: http://localhost:3001/api (internal - used by agents API)
+   - **Frontend**: http://localhost:3000 (web demo - only talks to agents API)
+
+4. **Test the APIs directly**:
    ```bash
+   # Test agents API
+   curl "http://localhost:3002/api/agents" -X POST -H "Content-Type: application/json" -d '{"name":"TestAgent"}'
+   
+   # Test merchant API directly (internal)
    curl "http://localhost:3001/api/products?query=TV&maxPrice=5"
    ```
 
-3. **Interact with the shopping agent**:
-   The client will start an interactive session where you can make natural language requests:
+4. **Use the CLI shopping agent**:
+   The shopping agent will start an interactive session where you can make natural language requests:
    - "I want to buy a TV under $5"
-   - "Show me laptops with good reviews"
+   - "Show me laptops with good reviews"  
    - "Purchase the Samsung TV"
 
 ## Features
@@ -258,6 +295,62 @@ Which one would you like to purchase?
 - Multi-agent marketplace
 - Enhanced product search capabilities
 - Web interface for the shopping agent
+
+## Production Enhancements (Recommended)
+
+This template is intentionally minimal for local demos. For production:
+
+- Persistence
+  - Store agent sessions in Redis/DB so `ShoppingAgent` instances can be rehydrated after restarts.
+  - Save purchases to a DB with fields: `agentName`, `productId`, `amount`, `currency`, `transactionId`, `transactionHash`, `status`, timestamps.
+  - Persist agent wallets (identifier, address, smart wallet address) for auditing.
+
+- Transactions
+  - Background worker to poll thirdweb Transactions API and update `status`/`transactionHash` until confirmed.
+  - Idempotency keys for purchase requests to prevent duplicate charges on retries.
+  - Nightly reconciliation of local purchases with chain/thirdweb state.
+
+- Reliability/Scale
+  - Queue long ops (payments/lookups) via BullMQ/SQS; run a worker.
+  - Pub/Sub (Redis/NATS) for WebSocket status fan-out across instances.
+  - Rate limiting and circuit breakers for external APIs.
+
+- Security
+  - Secrets manager for `THIRDWEB_SECRET_KEY` (Vault/SSM/Doppler) instead of `.env`.
+  - AuthN/AuthZ to restrict agent operations per user; scoped API keys.
+  - Strict request validation (Zod) and locked CORS.
+
+- Observability
+  - Structured logs with `requestId`/`agentName`; metrics and tracing (Prometheus/Otel).
+  - Audit trail for wallet creation, payments, and balance checks.
+
+- Frontend
+  - Persist chats/agents/purchases server-side; hydrate on load rather than only `localStorage`.
+  - Dedicated Purchases page backed by DB, with status badges and BaseScan links.
+
+Example schema (sketch):
+
+```sql
+-- agents
+id uuid pk,
+name text unique not null,
+wallet_identifier text not null,
+address text not null,
+smart_wallet_address text,
+created_at timestamptz default now()
+
+-- purchases
+id uuid pk,
+agent_name text not null,
+product_id text not null,
+amount numeric(38,18) not null,
+currency text not null,
+transaction_id text,
+transaction_hash text,
+status text not null,
+created_at timestamptz default now(),
+updated_at timestamptz default now()
+```
 
 ## Contributing
 
