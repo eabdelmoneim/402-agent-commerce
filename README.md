@@ -2,46 +2,36 @@
 
 A modern monorepo showcasing a **ReAct (Reasoning and Acting) AI shopping agent** built with **LangChain** that interacts with a Node.js Express backend store API supporting **x402 payments**. This project demonstrates the integration of AI-powered reasoning with real blockchain transactions using **thirdweb's x402 SDK**.
 
-## 📚 Documentation
-
-- **[docs/SETUP.md](./docs/SETUP.md)** - Complete setup guide with environment configuration and troubleshooting
-- **[docs/PROJECT_SUMMARY.md](./docs/PROJECT_SUMMARY.md)** - Comprehensive project overview and architecture details
-- **[docs/THIRDWEB_X402_INTEGRATION.md](./docs/THIRDWEB_X402_INTEGRATION.md)** - Client/server x402 implementation details
-- **[docs/AGENT_X402_INTEGRATION.md](./docs/AGENT_X402_INTEGRATION.md)** - Guide for integrating x402 payments into AI agents
-
 ## Architecture
 
 ```
 ┌─────────────────────────┐    HTTP/REST API    ┌─────────────────────────┐
-│   ReAct Shopping Agent │ ───────────────────► │  Node Express Backend  │
-│   (LangChain + AI)      │                     │  (Store API)            │
+│   ReAct Shopping Agent  │                     │  Node Express Backend   │
+│   (LangChain + AI)      │─── get products ──► │   (Merchant API)        │
 │                         │                     │                         │
-│ • LangChain ReAct Agent │                     │ • Product Search API    │
-│ • thirdweb Server Wallet Tools      │                     │ • x402 Purchase API     │
-│ • x402 Payment Handler  │                     │ • thirdweb Integration  │
+│ • LangChain ReAct Agent │─ purchase(product)─►│ • Product Search API    │
+│ • Agent Wallet          │                     │ • Purchase API (x402)   │
+│ • Tools:                |◄─ 402 payment req. ─| • Merchant Wallet       | 
+|   - Get Products.       |                     |                         |
+|   - x402 Payment Handler│─ purchase(product)─►│                         │
+│                         │ w/ x-payment header │                         │
 └─────────────────────────┘                     └─────────────────────────┘
+              |
+HTTP/REST API |
+              |
+              ▼
+┌─────────────────────────┐ 
+|     thirdweb API        |
+|                         |
+| • create Agent Wallet   |
+| • prepare x402 payment  |
+| • get balance, tx's.    |
+|                         |
+└─────────────────────────┘
 ```
+## 📚 x402 Details and Documentation
 
-## Project Structure
-
-```
-shopping-agent-x402/
-├── package.json                 # Root workspace configuration
-├── pnpm-workspace.yaml          # pnpm workspace configuration
-├── README.md
-├── .gitignore
-├── docs/                        # Documentation
-│   ├── SETUP.md                 # Detailed setup guide
-│   ├── PROJECT_SUMMARY.md       # Complete project overview
-│   ├── THIRDWEB_X402_INTEGRATION.md # x402 implementation details
-│   └── AGENT_X402_INTEGRATION.md # Agent integration guide
-├── apps/
-│   ├── shopping-agent/          # ReAct AI Shopping Agent (LangChain) + Agents API
-│   ├── merchant/                # Node Express Store API (thirdweb x402)
-│   └── frontend/                # React Web Demo (x402 Protocol Showcase)
-└── packages/                    # Shared packages (future A2A integration)
-    └── shared-types/
-```
+- **[docs/THIRDWEB_X402_INTEGRATION.md](./docs/THIRDWEB_X402_INTEGRATION.md)** - Client/server x402 implementation details
 
 ## Quick Start
 
@@ -155,33 +145,6 @@ pnpm dev:frontend    # Web frontend only (port 3000)
    - "Show me laptops with good reviews"  
    - "Purchase the Samsung TV"
 
-## Features
-
-### ReAct AI Shopping Agent (Client)
-- **LangChain ReAct Agent**: Professional-grade ReAct implementation using `createReactAgent`
-- **OpenAI Integration**: Uses GPT-4o for natural language understanding and reasoning
-- **Dynamic Agent Tools**: 
-  - `get_products`: Search product catalog with smart filtering
-  - `process_payment`: Handle x402 cryptocurrency payments with real blockchain transactions
-- **thirdweb Server Wallet**: Manages buyer thirdweb Server Wallet for x402 transactions
-- **Global Service Architecture**: Clean, maintainable codebase with global wallet service
-
-### Express Store API (Server)
-- **AI Product Generation**: Uses OpenAI to generate realistic product catalogs
-- **thirdweb x402 Integration**: Real blockchain payment processing using official thirdweb SDK
-- **thirdweb Server Wallet Facilitator**: Manages merchant thirdweb Server Wallet for receiving payments
-- **Simplified RESTful APIs**: Clean API design focused on products and purchases
-
-### x402 Payment Flow
-1. Client requests product information and identifies desired purchase
-2. Client attempts purchase via `POST /api/purchase/:productId`
-3. Server responds with 402 status and x402 requirements if payment needed
-4. Client prepares x402 payment using thirdweb API with thirdweb Server Wallet
-5. Client retries purchase with `x-payment` header containing signed payment
-6. Server uses thirdweb's `settlePayment` for real blockchain transaction
-7. **Actual USDC transfer occurs on Base Sepolia network**
-8. Transaction hash returned for verification
-
 ## API Endpoints
 
 ### Products API
@@ -202,7 +165,7 @@ pnpm dev:frontend    # Web frontend only (port 3000)
 - **Language**: TypeScript with strict typing
 - **Agent Framework**: LangChain with `createReactAgent` for ReAct pattern
 - **Backend**: Express.js with security middleware
-- **AI Integration**: OpenAI GPT-4o API
+- **AI Integration**: OpenAI GPT-4.1 API
 - **Payments**: thirdweb SDK v5 with official x402 facilitator and settlePayment
 - **Blockchain**: Base Sepolia testnet with thirdweb Server Wallet integration
 - **Currency**: USDC (real transfers)
@@ -224,141 +187,6 @@ pnpm --filter server build           # Build server
 pnpm --filter client typecheck       # Type check client
 pnpm --filter server typecheck       # Type check server
 ```
-
-## Key Improvements from v1
-
-### ✅ LangChain Integration
-- Replaced custom ReAct implementation with production-ready LangChain `createReactAgent`
-- Professional prompt engineering and tool integration
-- Better conversation management and error handling
-
-### ✅ thirdweb Server Wallet Architecture  
-- **thirdweb Server Wallet addresses used exclusively** for all x402 operations
-- Real blockchain transactions with proper gas handling
-- Clear separation between smart wallets and thirdweb Server Wallet addresses
-
-### ✅ thirdweb x402 SDK
-- Real blockchain transactions using official thirdweb `settlePayment`
-- Production-ready payment facilitation with `facilitator`
-- Actual USDC transfers on Base Sepolia network
-
-### ✅ Simplified API Design
-- Removed unnecessary endpoints to focus on core functionality
-- Single purchase endpoint with built-in x402 flow
-- Clean separation of concerns
-
-### ✅ Global Service Architecture
-- Global wallet service eliminates parameter passing
-- Cleaner, more maintainable codebase
-- Simplified tool implementations
-
-## Example Interaction
-
-```
-🛍️ Welcome to the ReAct Shopping Agent!
-
-🔑 Wallet Information:
-   Wallet Address: 0x84d09F004c1a139f326C1B25bF2d72c2166F40C8
-   Role: client_agent
-
-👤 You: Find me a TV under $5
-
-🤖 Agent: I found 3 TVs within your $5 budget:
-
-**1. Samsung 32" Smart TV** - $4.20 USDC
-   Experience stunning 4K clarity with this Samsung Smart TV...
-   Features: 4K Ultra HD, Smart TV Platform, HDR10+, Voice Remote
-
-**2. LG 28" LED TV** - $3.80 USDC  
-   Compact LED TV perfect for bedrooms with crisp picture quality...
-   Features: Full HD 1080p, LED Display, Multiple HDMI Ports
-
-**3. TCL 24" TV** - $2.90 USDC
-   Budget-friendly TV with reliable performance and clear audio...
-   Features: HD Ready, Built-in Speakers, HDMI & USB Ports
-
-Which one would you like to purchase?
-
-👤 You: I'll take the Samsung TV
-
-🤖 Agent: ✅ Payment successful! Purchased "Samsung 32" Smart TV" for $4.20 USDC.
-🔗 Transaction Hash: 0x1a2b3c4d5e6f789a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f
-💰 Amount: $4.20 USDC  
-🌐 Network: Base Sepolia
-```
-
-## Future Enhancements (Phase 2)
-
-- Convert backend to A2A merchant agent
-- Implement A2A protocol communication  
-- Agent-to-agent payment negotiation
-- Multi-agent marketplace
-- Enhanced product search capabilities
-- Web interface for the shopping agent
-
-## Production Enhancements (Recommended)
-
-This template is intentionally minimal for local demos. For production:
-
-- Persistence
-  - Store agent sessions in Redis/DB so `ShoppingAgent` instances can be rehydrated after restarts.
-  - Save purchases to a DB with fields: `agentName`, `productId`, `amount`, `currency`, `transactionId`, `transactionHash`, `status`, timestamps.
-  - Persist agent wallets (identifier, address, smart wallet address) for auditing.
-
-- Transactions
-  - Background worker to poll thirdweb Transactions API and update `status`/`transactionHash` until confirmed.
-  - Idempotency keys for purchase requests to prevent duplicate charges on retries.
-  - Nightly reconciliation of local purchases with chain/thirdweb state.
-
-- Reliability/Scale
-  - Queue long ops (payments/lookups) via BullMQ/SQS; run a worker.
-  - Pub/Sub (Redis/NATS) for WebSocket status fan-out across instances.
-  - Rate limiting and circuit breakers for external APIs.
-
-- Security
-  - Secrets manager for `THIRDWEB_SECRET_KEY` (Vault/SSM/Doppler) instead of `.env`.
-  - AuthN/AuthZ to restrict agent operations per user; scoped API keys.
-  - Strict request validation (Zod) and locked CORS.
-
-- Observability
-  - Structured logs with `requestId`/`agentName`; metrics and tracing (Prometheus/Otel).
-  - Audit trail for wallet creation, payments, and balance checks.
-
-- Frontend
-  - Persist chats/agents/purchases server-side; hydrate on load rather than only `localStorage`.
-  - Dedicated Purchases page backed by DB, with status badges and BaseScan links.
-
-Example schema (sketch):
-
-```sql
--- agents
-id uuid pk,
-name text unique not null,
-wallet_identifier text not null,
-address text not null,
-smart_wallet_address text,
-created_at timestamptz default now()
-
--- purchases
-id uuid pk,
-agent_name text not null,
-product_id text not null,
-amount numeric(38,18) not null,
-currency text not null,
-transaction_id text,
-transaction_hash text,
-status text not null,
-created_at timestamptz default now(),
-updated_at timestamptz default now()
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
 
 ## License
 
