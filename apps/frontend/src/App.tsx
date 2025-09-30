@@ -80,8 +80,28 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Shopping Agent x402 Demo</h1>
-        <p>Experience AI-powered shopping with blockchain payments</p>
+        <div className="header-content">
+          <h1>Shopping Agent x402 Demo</h1>
+          <p>Experience AI-powered shopping with stablecoin payments</p>
+          <div className="header-links">
+            <a 
+              href="https://portal.thirdweb.com/payments/x402" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="header-link"
+            >
+              📚 x402 Docs
+            </a>
+            <a 
+              href="https://github.com/thirdweb-example/402-agent-commerce" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="header-link"
+            >
+              🔗 GitHub
+            </a>
+          </div>
+        </div>
       </header>
 
       <main className="app-main">
