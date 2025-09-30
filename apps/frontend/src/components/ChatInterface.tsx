@@ -22,6 +22,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ agent, onBackToAge
   const [copied, setCopied] = useState(false);
   const [showPurchases, setShowPurchases] = useState(false);
   const [purchases, setPurchases] = useState<any[]>([]);
+  const [hasNewPurchases, setHasNewPurchases] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsService = WebSocketService.getInstance();
 
@@ -33,14 +34,32 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ agent, onBackToAge
     scrollToBottom();
   }, [messages]);
 
-  // Load messages from localStorage when component mounts
+  // Load messages and purchases from localStorage when component mounts
   useEffect(() => {
     const savedMessages = localStorage.getItem(`chat-${agent.name}`);
     if (savedMessages) {
       setMessages(JSON.parse(savedMessages));
     }
+    
+    const savedPurchases = localStorage.getItem(`purchases-${agent.name}`);
+    if (savedPurchases) {
+      setPurchases(JSON.parse(savedPurchases));
+    }
+    
     checkBalance();
   }, [agent]);
+
+  // Auto-refresh wallet balance every 5 seconds
+  useEffect(() => {
+    const balanceInterval = setInterval(() => {
+      // Auto-refresh silently without showing loading state
+      if (!isCheckingBalance) {
+        silentCheckBalance();
+      }
+    }, 5000);
+
+    return () => clearInterval(balanceInterval);
+  }, [isCheckingBalance]);
 
   // Save messages to localStorage whenever messages change
   useEffect(() => {
@@ -48,6 +67,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ agent, onBackToAge
       localStorage.setItem(`chat-${agent.name}`, JSON.stringify(messages));
     }
   }, [messages, agent.name]);
+
+  // Save purchases to localStorage whenever purchases change
+  useEffect(() => {
+    if (purchases.length > 0) {
+      localStorage.setItem(`purchases-${agent.name}`, JSON.stringify(purchases));
+    }
+  }, [purchases, agent.name]);
 
   // WebSocket subscription for status updates
   useEffect(() => {
@@ -101,6 +127,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ agent, onBackToAge
     }
   };
 
+  const silentCheckBalance = async () => {
+    // Check balance without showing loading state (for auto-refresh)
+    try {
+      const balanceData = await AgentService.getAgentBalance(agent.name);
+      setBalance(`${balanceData.balance} ${balanceData.currency}`);
+      setBalanceError(null);
+    } catch (err: any) {
+      // Don't update error state during silent refresh to avoid UI flicker
+      console.error('Silent balance check error:', err);
+    }
+  };
+
   const refreshBalance = async () => {
     await checkBalance();
   };
@@ -115,6 +153,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ agent, onBackToAge
     window.open('https://faucet.circle.com/', '_blank', 'noopener,noreferrer');
   };
 
+  const handleShowPurchases = () => {
+    setShowPurchases(true);
+    setHasNewPurchases(false); // Clear notification dot when viewing purchases
+  };
+
   // Capture transaction IDs from successful tool observations
   useEffect(() => {
     const last = messages[messages.length - 1];
@@ -122,24 +165,44 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ agent, onBackToAge
       const match = last.content.match(/Transaction ID:\s*(\S+)/);
       if (match) {
         const id = match[1];
+        
+        // Check if this transaction ID already exists in purchases
+        const existingPurchase = purchases.find(p => p.id === id);
+        if (existingPurchase) {
+          console.log('Transaction ID already exists, skipping:', id);
+          return;
+        }
+        
         // fetch transaction details via proxy
         AgentService.getTransactionById(id).then((tx) => {
           const etherscan = tx.transactionHash ? `https://sepolia.basescan.org/tx/${tx.transactionHash}` : undefined;
-          setPurchases((prev) => [
-            {
-              id,
-              status: tx.status,
-              transactionHash: tx.transactionHash,
-              amount: agent.balance || '',
-              link: etherscan,
-              createdAt: Date.now()
-            },
-            ...prev
-          ]);
+          setPurchases((prev) => {
+            // Double-check for duplicates before adding (in case of race conditions)
+            const alreadyExists = prev.find(p => p.id === id);
+            if (alreadyExists) {
+              console.log('Transaction ID already exists in state, skipping:', id);
+              return prev;
+            }
+            
+            return [
+              {
+                id,
+                status: tx.status,
+                transactionHash: tx.transactionHash,
+                amount: agent.balance || '',
+                link: etherscan,
+                createdAt: Date.now()
+              },
+              ...prev
+            ];
+          });
+          
+          // Show notification dot for new purchase
+          setHasNewPurchases(true);
         }).catch(() => {/* ignore */});
       }
     }
-  }, [messages]);
+  }, [messages, purchases]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,6 +250,53 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ agent, onBackToAge
     }
   };
 
+  const handleProductClick = async (productName: string, productId?: string) => {
+    if (isLoading) return; // Prevent multiple clicks during loading
+    
+    // Create purchase message
+    const purchaseMessage = productId 
+      ? `I'll take the ${productName} (ID: ${productId})`
+      : `I'll take the ${productName}`;
+    
+    // Add user message
+    addMessage({
+      type: 'user',
+      content: purchaseMessage,
+      timestamp: Date.now(),
+    });
+
+    setIsLoading(true);
+    setCurrentStatus({
+      type: 'processing',
+      message: 'Processing your purchase...',
+      timestamp: Date.now(),
+    });
+
+    try {
+      const response = await AgentService.sendMessage(agent.name, purchaseMessage);
+      
+      // Add agent response
+      addMessage({
+        type: 'agent',
+        content: response.response,
+        timestamp: Date.now(),
+        data: response.status,
+      });
+
+      // Clear status
+      setCurrentStatus(null);
+    } catch (error: any) {
+      addMessage({
+        type: 'agent',
+        content: 'Sorry, I encountered an error processing your purchase. Please try again.',
+        timestamp: Date.now(),
+      });
+      setCurrentStatus(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const formatAgentMessage = (content: string) => {
     // Debug: Log the full content to see what we're working with
     console.log('🔍 Full agent response content:', content);
@@ -205,13 +315,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ agent, onBackToAge
         console.log('✅ Matched numbered item:', numberedItemMatch);
         const [, number, productName, price, productId] = numberedItemMatch;
         return (
-          <div key={index} className="product-item">
+          <div 
+            key={index} 
+            className={`product-item clickable ${isLoading ? 'disabled' : ''}`}
+            onClick={() => handleProductClick(productName, productId)}
+            title={isLoading ? "Processing..." : "Click to purchase this item"}
+          >
             <div className="product-header">
               <span className="product-number">{number}.</span>
               <span className="product-name">{productName}</span>
               <span className="product-price">${price} USDC</span>
             </div>
             <div className="product-id">ID: {productId}</div>
+            <div className="product-click-hint">{isLoading ? "Processing..." : "Click to buy"}</div>
           </div>
         );
       }
@@ -222,12 +338,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ agent, onBackToAge
         console.log('✅ Matched flexible product:', flexibleProductMatch);
         const [, number, productName, price] = flexibleProductMatch;
         return (
-          <div key={index} className="product-item">
+          <div 
+            key={index} 
+            className={`product-item clickable ${isLoading ? 'disabled' : ''}`}
+            onClick={() => handleProductClick(productName)}
+            title={isLoading ? "Processing..." : "Click to purchase this item"}
+          >
             <div className="product-header">
               <span className="product-number">{number}.</span>
               <span className="product-name">{productName}</span>
               <span className="product-price">${price}</span>
             </div>
+            <div className="product-click-hint">{isLoading ? "Processing..." : "Click to buy"}</div>
           </div>
         );
       }
@@ -325,8 +447,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ agent, onBackToAge
             <button onClick={onBackToAgents} className="nav-btn" title="Back to agents">
               <ArrowLeft size={16} />
             </button>
-          <button onClick={() => setShowPurchases(true)} className="nav-btn" title="View purchases">
+          <button onClick={handleShowPurchases} className="nav-btn purchase-btn" title="View purchases">
             <Receipt size={16} />
+            {hasNewPurchases && <span className="notification-dot"></span>}
           </button>
             <button onClick={onSwitchAgent} className="nav-btn" title="Switch agent">
               <Users size={16} />
