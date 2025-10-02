@@ -9,6 +9,7 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
+        //target: 'https://ed9373bbd298.ngrok-free.app',
         changeOrigin: true,
       },
     },

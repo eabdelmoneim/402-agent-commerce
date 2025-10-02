@@ -64,6 +64,21 @@ export async function processX402Payment(
         transactionId: purchaseResponse.transactionId,
         observation: `✅ Payment successful! Purchased "${productName}" for $${price} USDC.\n🧾 Transaction ID: ${purchaseResponse.transactionId}\n💰 Amount: $${price} USDC\n🌐 Network: Base Sepolia`
       };
+    } else if (purchaseResponse.fundingRequired) {
+      // Handle case where wallet needs funding
+      return {
+        success: false,
+        data: purchaseResponse,
+        error: 'Wallet funding required',
+        observation: `💰 Insufficient wallet balance to purchase "${productName}" ($${price} USDC)
+
+⚠️ Your agent wallet needs USDC on Base Sepolia testnet.
+
+🚰 Get free testnet USDC from Circle's faucet:
+${purchaseResponse.fundingLink}
+
+After funding your wallet, simply ask me to buy this product again and I'll retry the purchase!`
+      };
     } else {
       return {
         success: false,

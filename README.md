@@ -15,19 +15,20 @@ A modern monorepo showcasing a **ReAct (Reasoning and Acting) AI shopping agent*
 |   - Get Products.       |                     |                         |
 |   - x402 Payment Handler│─ purchase(product)─►│                         │
 │                         │ w/ x-payment header │                         │
+└─────────────────────────┘                     |                         |
+              |                                 |                         |
+HTTP/REST API |                                 |                         |
+              |                                 |                         | 
+              ▼                                 |                         |
+┌─────────────────────────┐                     |                         | 
+|     thirdweb API        |                     |                         |
+|                         |─ purchase(product)─►|                         |
+| • create Agent Wallet   |                     |                         |
+| • fetch w/ x402 payment |◄─ 402 payment req. ─|                         |
+| • get balance, tx's.    |                     |                         |
+|                         |─ purchase(product)─►│                         │
+│                         │ w/ x-payment header |                         |
 └─────────────────────────┘                     └─────────────────────────┘
-              |
-HTTP/REST API |
-              |
-              ▼
-┌─────────────────────────┐ 
-|     thirdweb API        |
-|                         |
-| • create Agent Wallet   |
-| • prepare x402 payment  |
-| • get balance, tx's.    |
-|                         |
-└─────────────────────────┘
 ```
 ## 📚 x402 Details and Documentation
 

@@ -12,7 +12,7 @@ Successfully implemented **complete x402 payment integration** using thirdweb's 
 ### Overview
 The client-side implementation focuses on **AI agent wallet management** and **payment preparation** using thirdweb's APIs. The agent uses a thirdweb Server Wallet for all x402 payment operations.
 
-In this template, the AI agent uses a dedicated **thirdweb x402 tool** that fully handles the 402 protocol end‑to‑end: detecting `402 Payment Required`, preparing the x402 payment via thirdweb, and retrying the request with the `x-payment` header.
+In this template, the AI agent uses a dedicated **thirdweb x402 tool** that fully handles the 402 protocol end‑to‑end: tool uses single thirdweb api that detects `402 Payment Required`, prepares the x402 payment , and retries the request with the `x-payment` header.
 
 ### Key Components
 
@@ -34,33 +34,33 @@ Each shopping AI agent has a server wallet identified by the agent name
     });
 ```
 
-#### 2. **thirdweb API for Payment Preparation**
+#### 2. **thirdweb API for fetching with x402 Payment **
 When the agent receives a 402 status back from the merchant API it calls the prepare method in the thirdweb api to create the signed payment header to be sent back to the merchant API.
 
 ```typescript
-// apps/shopping-agent/src/services/agentWalletService.ts
+// apiClient.ts
+    const queryParams = new URLSearchParams({
+        url: merchantPurchaseUrl,
+        method: 'POST',
+        from: walletAddress
+      });
 
-  // Use thirdweb API for x402 payment preparation
-  const response = await fetch(`${thirdwebApiUrl}/payments/x402/prepare`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-secret-key': thirdwebSecretKey
-    },
-    body: {
-      from: this.agentWallet.address, // agent's Server Wallet address
-      paymentRequirements: requirements
-    }
-  });
+      console.log(`🌐 Calling thirdweb x402/fetch: ${thirdwebApiUrl}?${queryParams.toString()}`);
+      
+      const response = await fetch(`${thirdwebApiUrl}?${queryParams.toString()}`, {
+        method: 'POST',
+        headers: {
+          'x-secret-key': thirdwebSecretKey,
+          'Content-Type': 'application/json'
+        }
+      });
 ```
 
 ### Client-Side Flow
 1. **Wallet Initialization**: Agent creates thirdweb Server Wallet via thirdweb API
 2. **Product Search**: Agent searches for products using natural language
-3. **Payment Trigger**: Agent attempts purchase without payment header
-4. **402 Response**: Server responds with x402 payment requirements
-5. **Payment Preparation**: Agent uses thirdweb API to prepare signed payment
-6. **Payment Retry**: Agent retries purchase with `x-payment` header
+3. **Fetch with x402 Payment**: Agent uses x402/fetch via thirdweb API to handle x402
+4. **If wallet needs funding**: thirdweb api responds with `402` with link to fund wallet 
 
 ---
 

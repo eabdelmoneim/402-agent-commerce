@@ -586,7 +586,7 @@
 
 .product-click-hint {
   position: absolute;
-  top: 0.5rem;
+  bottom: 0.5rem;
   right: 0.75rem;
   background: #10b981;
   color: white;

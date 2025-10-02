@@ -45,6 +45,10 @@ export interface PurchaseResponse {
   };
   error?: string;
   data?: any; // For 402 responses containing x402 requirements
+  fundingRequired?: boolean; // Flag when wallet needs funding to complete payment
+  fundingLink?: string; // Link to purchase/fund the wallet
+  paymentId?: string; // Payment ID for funding required case
+  quote?: any; // Bridge quote for completing the payment
 }
 
 export interface ThirdwebWalletResponse {
@@ -74,31 +78,4 @@ export interface AgentWalletConfig {
   smartWalletAddress: string;
   publicKey: string;
   role: 'client_agent';
-}
-
-export interface ThirdwebX402PrepareRequest {
-  from: string;  // User wallet address
-  paymentRequirements: X402PaymentRequirements;
-}
-
-export interface ThirdwebX402PrepareResponse {
-  result: {
-    paymentPayload: {
-      x402Version: number;
-      scheme: string;
-      network: string;
-      payload: {
-        signature: string;
-        authorization: {
-          from: string;
-          to: string;
-          value: string;
-          validAfter: string;
-          validBefore: string;
-          nonce: string;
-        };
-      };
-    };
-    paymentHeader: string;  // b64 encoded payment header for x-payment header
-  };
 }

@@ -1,5 +1,5 @@
 import { ProductSearchResponse, ProductDetailsResponse } from '../types/Product.js';
-import { PurchaseResponse, X402PaymentRequirements, ThirdwebX402PrepareResponse } from '../types/Payment.js';
+import { PurchaseResponse } from '../types/Payment.js';
 import { clientWalletService } from './globalWallet.js';
 import { AgentWalletConfig } from '../agents-api/services/agentManager.js';
 
@@ -80,73 +80,92 @@ export class ApiClient {
 
   async executePurchase(productId: string): Promise<PurchaseResponse> {
     try {
-      const url = `${this.baseUrl}/purchase/${productId}`;
-      console.log(`💳 Executing purchase: ${url}`);
+      // Construct the merchant purchase URL
+      // Use NGROK_FETCH_URL in development for external access, otherwise use baseUrl
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      const baseUrlForFetch = isDevelopment && process.env.NGROK_FETCH_URL 
+        ? process.env.NGROK_FETCH_URL 
+        : this.baseUrl;
+      const merchantPurchaseUrl = `${baseUrlForFetch}/purchase/${productId}`;
+      console.log(`💳 Executing purchase via thirdweb x402/fetch for product: ${productId}`);
+      console.log(`🔗 Merchant URL: ${merchantPurchaseUrl}${isDevelopment ? ' (using NGROK_FETCH_URL)' : ''}`);
 
-      // Step 1: Initial purchase attempt (no payment header)
-      let response = await fetch(url, {
+      // Get wallet address - use agent wallet if available, otherwise use global wallet
+      let walletAddress: string;
+      if (this.agentWallet) {
+        walletAddress = this.agentWallet.address;
+        console.log(`🔑 Using agent wallet: ${walletAddress}`);
+      } else {
+        const address = await clientWalletService.getWalletAddress();
+        if (!address) {
+          throw new Error('No wallet address available. Please initialize wallet first.');
+        }
+        walletAddress = address;
+        console.log(`🔑 Using global wallet: ${walletAddress}`);
+      }
+
+      // Get thirdweb secret key from environment
+      const thirdwebSecretKey = process.env.THIRDWEB_SECRET_KEY;
+      if (!thirdwebSecretKey) {
+        throw new Error('THIRDWEB_SECRET_KEY not found in environment');
+      }
+
+      // Call thirdweb x402/fetch API
+      const thirdwebApiUrl = 'https://api.thirdweb.com/v1/payments/x402/fetch';
+      const queryParams = new URLSearchParams({
+        url: merchantPurchaseUrl,
+        method: 'POST',
+        from: walletAddress
+      });
+
+      console.log(`🌐 Calling thirdweb x402/fetch: ${thirdwebApiUrl}?${queryParams.toString()}`);
+      
+      const response = await fetch(`${thirdwebApiUrl}?${queryParams.toString()}`, {
         method: 'POST',
         headers: {
+          'x-secret-key': thirdwebSecretKey,
           'Content-Type': 'application/json'
         }
       });
-      
-      // Handle 402 Payment Required (trigger x402 flow)
-      if (response.status === 402) {
-        console.log(`💳 Payment required (402) - starting x402 flow...`);
-        const x402Response = await response.json();
-        console.log('🔍 Received x402 response:', x402Response);
-        
-        // Extract payment requirements from the accepts array
-        let paymentRequirements;
-        if (x402Response.accepts && x402Response.accepts.length > 0) {
-          paymentRequirements = x402Response.accepts[0]; // Take the first accepted payment method
-          console.log('✅ Extracted payment requirements:', paymentRequirements);
-        } 
-        
-        try {
-          // Step 2: Prepare x402 payment using agent-specific wallet
-          console.log(`🔑 Preparing x402 payment signature...`);
-          const prepareResult = await this.prepareX402Payment(productId, paymentRequirements);
-          const { paymentHeader } = prepareResult.result;
 
-          // Step 3: Retry purchase with x-payment header
-          console.log(`💸 Retrying purchase with payment header...`);
-          response = await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-payment': paymentHeader
-            }
-          });
-        } catch (prepareError: any) {
-          return {
-            success: false,
-            productId,
-            error: `Failed to prepare x402 payment: ${prepareError.message}`
-          };
-        }
+      // Handle successful payment (200)
+      if (response.status === 200) {
+        const data: PurchaseResponse = await response.json();
+        console.log(`✅ Purchase successful! Transaction ID: ${data.transactionId}`);
+        return data;
       }
 
-      // Handle other non-success responses
-      if (!response.ok) {
-        const errorText = await response.text();
+      // Handle funding required (402)
+      if (response.status === 402) {
+        console.log(`💰 Wallet funding required (402) - insufficient balance`);
+        const fundingResponse = await response.json();
+        console.log('🔍 Funding response:', fundingResponse);
+        
+        // TODO: if on mainnet thirdweb api will return id, link, quote that can be used
+        // to fund the wallet. for testnet we will use the base sepolia faucet to fund the wallet.
+        // const { id, link } = fundingResponse.result;
+        
+        // console.log(`📋 Payment ID: ${id}`);
+        // console.log(`🔗 Funding link: ${link}`);
+        
         return {
           success: false,
           productId,
-          error: `HTTP ${response.status}: ${errorText}`
+          fundingRequired: true,
+          fundingLink: "https://faucet.circle.com/",
+          paymentId: "",
+          error: 'Insufficient wallet balance - funding required to complete purchase'
         };
       }
 
-      const data: PurchaseResponse = await response.json();
-      
-      if (data.success) {
-        console.log(`✅ Purchase successful! Transaction ID: ${data.transactionId}`);
-      } else {
-        console.log(`❌ Purchase failed: ${data.error}`);
-      }
-      
-      return data;
+      // Handle other error responses
+      const errorText = await response.text();
+      console.log(`❌ Purchase failed with status ${response.status}: ${errorText}`);
+      return {
+        success: false,
+        productId,
+        error: `HTTP ${response.status}: ${errorText}`
+      };
     } catch (error: any) {
       console.error('Error executing purchase:', error);
       return {
@@ -164,21 +183,6 @@ export class ApiClient {
       return response.ok;
     } catch (error) {
       return false;
-    }
-  }
-
-  async prepareX402Payment(productId: string, requirements: X402PaymentRequirements): Promise<ThirdwebX402PrepareResponse> {
-    // Use agent-specific wallet if available, otherwise fall back to global wallet service
-    if (this.agentWallet) {
-      // Create a temporary AgentWalletService instance with the agent's wallet
-      const { AgentWalletService } = await import('./agentWalletService.js');
-      const tempWalletService = new AgentWalletService();
-      // Set the wallet directly (bypassing the createOrGetAgentWallet method)
-      (tempWalletService as any).agentWallet = this.agentWallet;
-      return await tempWalletService.prepareX402Payment(productId, requirements);
-    } else {
-      // Fall back to global wallet service for CLI usage
-      return await clientWalletService.prepareX402Payment(productId, requirements);
     }
   }
 }
